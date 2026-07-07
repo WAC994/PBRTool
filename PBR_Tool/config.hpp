@@ -5,8 +5,9 @@ namespace pt
 {
     struct Config
     {
-        int width = 800;
-        int height = 600;
         std::string GPURenderer = "Unknown";
+        int width = 1280;
+        int height = 720;
+        bool enableVSync = false;
     };
 }

@@ -16,7 +16,11 @@ namespace pt
         glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
 
         m_window = glfwCreateWindow(config.width, config.height, "PBR Tool", nullptr, nullptr);
+        
         glfwMakeContextCurrent(m_window);
+
+        glfwSwapInterval(config.enableVSync ? 1 : 0);
+
         gladLoadGL(glfwGetProcAddress);
 
         config.GPURenderer = reinterpret_cast<const char*>(glGetString(GL_RENDERER));
