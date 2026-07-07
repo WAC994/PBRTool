@@ -1,4 +1,4 @@
-#include "PBR_Tool_Core.hpp"
+#include "pbr_tool_core.hpp"
 #include <glad/gl.h>
 #include <GLFW/glfw3.h>
 #include <string>
@@ -44,6 +44,10 @@ namespace pt
         {
             double currentFrameTime = glfwGetTime();
             float deltaTime = static_cast<float>(currentFrameTime - lastFrameTime);
+
+            if (m_scene)
+                m_scene->update(deltaTime);
+
             lastFrameTime = currentFrameTime;
 
             frameTimeSum += deltaTime;
@@ -59,6 +63,9 @@ namespace pt
 
             glClearColor(1.0f, 0.5f, 0.25f, 1.0f);
             glClear(GL_COLOR_BUFFER_BIT);
+
+            if (m_scene)
+                m_scene->render();
 
             glfwSwapBuffers(m_window);
             glfwPollEvents();
