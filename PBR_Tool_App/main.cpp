@@ -2,6 +2,6 @@
 
 int main()
 {
-    pt::App app;
+    pt::App& app = pt::App::getInstance();
     app.run();
 }

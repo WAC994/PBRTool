@@ -9,9 +9,12 @@ namespace pt
     class App
     {
     public:
-        App();
+        static App& getInstance();
+        App(const App&) = delete;
+        App& operator=(const App&) = delete;
         void run();
     private:
+        App();
     public:
         Config config;
     private:

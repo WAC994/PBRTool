@@ -8,6 +8,12 @@
 
 namespace pt
 {
+    App& App::getInstance()
+    {
+        static App instance;
+        return instance;
+    }
+
     App::App()
     {
         glfwInit();
@@ -16,7 +22,7 @@ namespace pt
         glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
 
         m_window = glfwCreateWindow(config.width, config.height, "PBR Tool", nullptr, nullptr);
-        
+
         glfwMakeContextCurrent(m_window);
 
         glfwSwapInterval(config.enableVSync ? 1 : 0);
