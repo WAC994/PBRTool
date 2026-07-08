@@ -11,4 +11,11 @@ set(GLFW_BUILD_EXAMPLES OFF CACHE BOOL "" FORCE)
 set(GLFW_BUILD_TESTS OFF CACHE BOOL "" FORCE)
 set(GLFW_INSTALL OFF CACHE BOOL "" FORCE)
 
-fetchcontent_makeavailable(glfw)
+# glm
+fetchcontent_declare(
+    glm
+    DOWNLOAD_EXTRACT_TIMESTAMP OFF
+    URL https://github.com/g-truc/glm/releases/download/1.0.3/glm-1.0.3.zip
+)
+
+fetchcontent_makeavailable(glfw glm)

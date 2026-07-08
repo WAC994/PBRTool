@@ -61,7 +61,6 @@ namespace pt
                 frameCount = 0;
             }
 
-            glClearColor(1.0f, 0.5f, 0.25f, 1.0f);
             glClear(GL_COLOR_BUFFER_BIT);
 
             if (m_scene)

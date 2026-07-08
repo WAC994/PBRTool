@@ -3,7 +3,7 @@
 
 int main()
 {
-    pt::App& app = pt::App::getInstance();
-    app.setScene<DemoScene>();
+    App& app = App::getInstance();
+    app.setScene<ScreenColor>();
     app.run();
 }
