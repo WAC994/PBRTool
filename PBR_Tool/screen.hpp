@@ -1,6 +1,6 @@
 #pragma once
 #include "shader.hpp"
-#include <cstdint>
+#include "utilities.hpp"
 
 namespace pt
 {
@@ -9,14 +9,11 @@ namespace pt
     public:
         Screen();
         ~Screen();
-
     public:
         void draw();
-        void draw(uint32_t texture);
-
+        void draw(GLuint texture);
     private:
-        uint32_t m_screenArray{};
-        uint32_t m_screenBuffer{};
-        Shader m_screenShader;
+        GLuint m_vArray, m_vBuffer;
+        Shader m_shader;
     };
 }

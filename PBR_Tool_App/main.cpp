@@ -4,6 +4,6 @@
 int main()
 {
     App& app = App::getInstance();
-    app.setScene<ScreenColor>();
+    app.setScene<MeshTexture>();
     app.run();
 }

@@ -1,10 +1,12 @@
 #include "pbr_tool_core.hpp"
 #include <glad/gl.h>
+#include "debug.hpp"
 #include <GLFW/glfw3.h>
 #include <string>
 #include <format>
 #include <iostream>
 #include <cstdint>
+
 
 namespace pt
 {
@@ -29,6 +31,16 @@ namespace pt
 
         gladLoadGL(glfwGetProcAddress);
 
+        int flags;
+        glGetIntegerv(GL_CONTEXT_FLAGS, &flags);
+        if (flags & GL_CONTEXT_FLAG_DEBUG_BIT)
+        {
+            glEnable(GL_DEBUG_OUTPUT);
+            glEnable(GL_DEBUG_OUTPUT_SYNCHRONOUS);
+            glDebugMessageCallback(openGLDebugCallback, nullptr);
+            glDebugMessageControl(GL_DONT_CARE, GL_DONT_CARE, GL_DONT_CARE, 0, nullptr, GL_TRUE);
+        }
+
         config.GPURenderer = reinterpret_cast<const char*>(glGetString(GL_RENDERER));
 
         glViewport(0, 0, config.width, config.height);
@@ -36,6 +48,12 @@ namespace pt
 
     void App::run()
     {
+        glEnable(GL_CULL_FACE);
+        glEnable(GL_DEPTH_TEST);
+
+        if (m_scene)
+            m_scene->init();
+
         double lastFrameTime = glfwGetTime();
         std::string frameInfo;
         float frameTimeSum = 0.0f;
@@ -61,7 +79,7 @@ namespace pt
                 frameCount = 0;
             }
 
-            glClear(GL_COLOR_BUFFER_BIT);
+            glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
             if (m_scene)
                 m_scene->render();

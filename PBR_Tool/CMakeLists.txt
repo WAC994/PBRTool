@@ -1,6 +1,6 @@
 add_library(PBR_Tool_Core STATIC)
 
-target_link_libraries(PBR_Tool_Core PUBLIC glfw glm)
+target_link_libraries(PBR_Tool_Core PUBLIC glfw glm assimp)
 
 target_sources(PBR_Tool_Core PUBLIC pbr_tool_core.hpp
     config.hpp
@@ -8,14 +8,28 @@ target_sources(PBR_Tool_Core PUBLIC pbr_tool_core.hpp
     texture.hpp
     screen.hpp
     shader.hpp
-    camera.hpp)
+    camera.hpp
+    mesh.hpp
+    framebuffer.hpp
+    batch_renderer.hpp
+    transform.hpp
+    model.hpp)
+
 target_sources(PBR_Tool_Core PRIVATE pbr_tool_core.cpp
     vendor/glad/src/gl.c
     vendor/stb_image/stb_image.c
     texture.cpp
     shader.cpp
     screen.cpp
-    camera.cpp)
+    camera.cpp
+    mesh.cpp
+    utilities.hpp 
+    utilities.cpp
+    framebuffer.cpp
+    debug.hpp
+    batch_renderer.cpp
+    transform.cpp
+    model.cpp)
 
 target_include_directories(PBR_Tool_Core PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}
     ${CMAKE_CURRENT_SOURCE_DIR}/vendor/glad/include

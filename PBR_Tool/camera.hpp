@@ -1,6 +1,6 @@
 #pragma once
-#include <cstdint>
 #include <glm/glm.hpp>
+#include "utilities.hpp"
 
 namespace pt
 {
@@ -33,13 +33,11 @@ namespace pt
         CameraData getData();
         void setAspectRatio(float aspectRatio);
         void update();
-
     private:
         void updateVectors();
-
     private:
         glm::vec3 m_front, m_right, m_up;
         float m_aspectRatio, m_yaw, m_pitch, m_maxFieldOfView;
-        uint32_t m_cameraBuffer;
+        uint32_t m_buffer;
     };
 }

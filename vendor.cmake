@@ -18,4 +18,13 @@ fetchcontent_declare(
     URL https://github.com/g-truc/glm/releases/download/1.0.3/glm-1.0.3.zip
 )
 
-fetchcontent_makeavailable(glfw glm)
+# assimp
+fetchcontent_declare(
+    assimp
+    DOWNLOAD_EXTRACT_TIMESTAMP OFF
+    URL https://github.com/assimp/assimp/archive/refs/tags/v6.0.4.zip
+)
+set(ASSIMP_BUILD_TESTS OFF CACHE BOOL "" FORCE)
+set(BUILD_SHARED_LIBS OFF CACHE BOOL "" FORCE)
+
+fetchcontent_makeavailable(glfw glm assimp)

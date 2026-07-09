@@ -42,56 +42,48 @@ const char* s_screenFragShader =
 "   f_color = gammaCorrection(texture(u_texture, v_texCoord));\n"
 "}\0";
 
-static void bindVertexArrayImpl(uint32_t vArray)
-{
-    static uint32_t currentArray = 0;
-    if (currentArray != vArray)
-    {
-        glBindVertexArray(vArray);
-        currentArray = vArray;
-    }
-}
+
 namespace pt
 {
     Screen::Screen()
     {
         // Create screen vertex array and buffer
-        glCreateVertexArrays(1, &m_screenArray);
-        glCreateBuffers(1, &m_screenBuffer);
-        glVertexArrayVertexBuffer(m_screenArray, 0, m_screenBuffer, 0, 4 * sizeof(float));
-        glNamedBufferData(m_screenBuffer, sizeof(s_screenVertices), s_screenVertices, GL_STATIC_DRAW);
+        glCreateVertexArrays(1, &m_vArray);
+        glCreateBuffers(1, &m_vBuffer);
+        glVertexArrayVertexBuffer(m_vArray, 0, m_vBuffer, 0, 4 * sizeof(float));
+        glNamedBufferData(m_vBuffer, sizeof(s_screenVertices), s_screenVertices, GL_STATIC_DRAW);
 
         // Screen Vertices
-        glEnableVertexArrayAttrib(m_screenArray, 0);
-        glVertexArrayAttribFormat(m_screenArray, 0, 2, GL_FLOAT, GL_FALSE, 0);
-        glVertexArrayAttribBinding(m_screenArray, 0, 0);
+        glEnableVertexArrayAttrib(m_vArray, 0);
+        glVertexArrayAttribFormat(m_vArray, 0, 2, GL_FLOAT, GL_FALSE, 0);
+        glVertexArrayAttribBinding(m_vArray, 0, 0);
 
         // Screen TexCoords
-        glEnableVertexArrayAttrib(m_screenArray, 1);
-        glVertexArrayAttribFormat(m_screenArray, 1, 2, GL_FLOAT, GL_FALSE, 2 * sizeof(float));
-        glVertexArrayAttribBinding(m_screenArray, 1, 0);
+        glEnableVertexArrayAttrib(m_vArray, 1);
+        glVertexArrayAttribFormat(m_vArray, 1, 2, GL_FLOAT, GL_FALSE, 2 * sizeof(float));
+        glVertexArrayAttribBinding(m_vArray, 1, 0);
 
         // Create screen shader
-        m_screenShader.addShader(ShaderType::VERT, s_screenVertShader, SHADERFILEINFO::STRING);
-        m_screenShader.addShader(ShaderType::FRAG, s_screenFragShader, SHADERFILEINFO::STRING);
-        m_screenShader.linkProgram();
+        m_shader.addShader(ShaderType::VERT, s_screenVertShader, SHADERFILEINFO::STRING);
+        m_shader.addShader(ShaderType::FRAG, s_screenFragShader, SHADERFILEINFO::STRING);
+        m_shader.linkProgram();
     }
 
     Screen::~Screen()
     {
-        glDeleteVertexArrays(1, &m_screenArray);
-        glDeleteBuffers(1, &m_screenBuffer);
+        glDeleteVertexArrays(1, &m_vArray);
+        glDeleteBuffers(1, &m_vBuffer);
     }
 
     void Screen::draw()
     {
-        bindVertexArrayImpl(m_screenArray);
+        bindVertexArray(m_vArray);
         glDrawArrays(GL_TRIANGLES, 0, 3);
     }
 
-    void Screen::draw(uint32_t texture)
+    void Screen::draw(GLuint texture)
     {
-        m_screenShader.bindTexture(0, texture);
+        m_shader.bindTexture(0, texture);
         draw();
     }
 }

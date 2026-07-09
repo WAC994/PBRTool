@@ -6,24 +6,22 @@ constexpr float CAMERA_YAW = -90.0f;
 constexpr float CAMERA_PITCH = 0.0f;
 constexpr glm::vec3 WORLD_UP = glm::vec3(0.0f, 1.0f, 0.0f);
 constexpr float ASPECT_16_BY_9 = 1.777f;
-constexpr uint32_t CAMERA_UBO_BINDING_POINT = 0;
 
 namespace pt
 {
     Camera::Camera(const CameraSettings& config)
-        : CameraSettings(config), m_aspectRatio{ ASPECT_16_BY_9 }, m_yaw{ CAMERA_YAW }, m_pitch{ CAMERA_PITCH },
-        m_maxFieldOfView{ fieldOfView }
+        : CameraSettings(config), m_aspectRatio{ ASPECT_16_BY_9 }, m_yaw{ CAMERA_YAW }, m_pitch{ CAMERA_PITCH }, m_maxFieldOfView{ fieldOfView }
     {
         updateVectors();
 
-        glCreateBuffers(1, &m_cameraBuffer);
-        glNamedBufferStorage(m_cameraBuffer, sizeof(CameraData), nullptr, GL_DYNAMIC_STORAGE_BIT);
-        glBindBufferBase(GL_UNIFORM_BUFFER, CAMERA_UBO_BINDING_POINT, m_cameraBuffer);
+        glCreateBuffers(1, &m_buffer);
+        glNamedBufferStorage(m_buffer, sizeof(CameraData), nullptr, GL_DYNAMIC_STORAGE_BIT);
+        glBindBufferBase(GL_UNIFORM_BUFFER, CAMERA_UBO_BINDING_POINT, m_buffer);
     }
 
     Camera::~Camera()
     {
-        glDeleteBuffers(1, &m_cameraBuffer);
+        glDeleteBuffers(1, &m_buffer);
     }
 
     void Camera::move(const glm::vec2& input, float deltaTime)
@@ -70,9 +68,7 @@ namespace pt
 
     void Camera::updateVectors()
     {
-        m_front =
-            glm::normalize(glm::vec3(cos(glm::radians(m_yaw)) * cos(glm::radians(m_pitch)), sin(glm::radians(m_pitch)),
-                sin(glm::radians(m_yaw)) * cos(glm::radians(m_pitch))));
+        m_front = glm::normalize(glm::vec3(cos(glm::radians(m_yaw)) * cos(glm::radians(m_pitch)), sin(glm::radians(m_pitch)), sin(glm::radians(m_yaw)) * cos(glm::radians(m_pitch))));
 
         m_right = glm::normalize(glm::cross(m_front, WORLD_UP));
 
@@ -82,7 +78,7 @@ namespace pt
     void Camera::update()
     {
         auto cameraData = getData();
-        glNamedBufferSubData(m_cameraBuffer, 0, sizeof(CameraData), &cameraData);
+        glNamedBufferSubData(m_buffer, 0, sizeof(CameraData), &cameraData);
     }
 
     glm::mat4 Camera::getPerspectiveMatrix() const
