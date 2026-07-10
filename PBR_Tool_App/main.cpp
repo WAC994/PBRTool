@@ -4,6 +4,6 @@
 int main()
 {
     App& app = App::getInstance();
-    app.setScene<MeshTexture>();
+    app.setScene<MeshBatchedTexture>();
     app.run();
 }

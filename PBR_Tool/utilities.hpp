@@ -2,6 +2,21 @@
 #include <cstdint>
 #include <glad/gl.h>
 
+struct DrawElementsIndirectCommand
+{
+    DrawElementsIndirectCommand(uint32_t c, uint32_t ic, uint32_t fi, int32_t bv, uint32_t bi)
+        : count(c), instanceCount(ic), firstIndex(fi), basevertex(bv), baseInstance(bi)
+    {
+    }
+    uint32_t count;
+    uint32_t instanceCount;
+    uint32_t firstIndex;
+    int32_t basevertex;
+    uint32_t baseInstance;
+};
+
+using DEIC = DrawElementsIndirectCommand;
+
 namespace pt
 {
     void bindVertexArray(GLuint vArray);

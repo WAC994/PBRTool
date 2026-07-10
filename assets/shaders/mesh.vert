@@ -1,6 +1,7 @@
 #version 460 core
 
 const uint CAMERA_UBO_BINDING_POINT = 0;
+
 layout(std140, binding = CAMERA_UBO_BINDING_POINT) uniform CameraData
 {
     mat4 perspective;

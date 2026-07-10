@@ -7,7 +7,6 @@
 #include <iostream>
 #include <cstdint>
 
-
 namespace pt
 {
     App& App::getInstance()
@@ -16,18 +15,22 @@ namespace pt
         return instance;
     }
 
-    App::App()
+    App::App() : m_firstMouse(true)
     {
         glfwInit();
         glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 4);
         glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 6);
         glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
 
-        m_window = glfwCreateWindow(config.width, config.height, "PBR Tool", nullptr, nullptr);
+        m_window = glfwCreateWindow(config.width, config.height, "PBR Tool", config.fullscreen ? glfwGetPrimaryMonitor() : nullptr, nullptr);
 
         glfwMakeContextCurrent(m_window);
 
-        glfwSwapInterval(config.enableVSync ? 1 : 0);
+        glfwSwapInterval(config.vSync ? 1 : 0);
+
+        glfwSetInputMode(m_window, GLFW_CURSOR, config.hideCursor ? GLFW_CURSOR_DISABLED : GLFW_CURSOR_NORMAL);
+
+        glfwSetWindowUserPointer(m_window, this);
 
         gladLoadGL(glfwGetProcAddress);
 
@@ -44,6 +47,61 @@ namespace pt
         config.GPURenderer = reinterpret_cast<const char*>(glGetString(GL_RENDERER));
 
         glViewport(0, 0, config.width, config.height);
+
+        eventCallbacks();
+    }
+
+    void App::runEvent(Event& event)
+    {
+        if (m_scene)
+            m_scene->onEvent(event);
+    }
+
+    void App::eventCallbacks()
+    {
+        glfwSetKeyCallback(m_window, [](GLFWwindow* window, int key, int scancode, int action, int mode)
+            {
+                App& thisWindow = *((App*)glfwGetWindowUserPointer(window));
+                KeyEvent event;
+                event.key = key;
+                event.action = action;
+                thisWindow.runEvent(event);
+
+                // Reserved close window event
+                if (key == GLFW_KEY_ESCAPE && action == GLFW_PRESS)
+                    thisWindow.close();
+            });
+
+        glfwSetMouseButtonCallback(m_window, [](GLFWwindow* window, int button, int action, int mods)
+            {
+                App& thisWindow = *((App*)glfwGetWindowUserPointer(window));
+                MouseButtonEvent event;
+                event.button = button;
+                event.action = action;
+                thisWindow.runEvent(event);
+            });
+
+        glfwSetCursorPosCallback(m_window, [](GLFWwindow* window, double xpos, double ypos)
+            {
+                App& thisWindow = *((App*)glfwGetWindowUserPointer(window));
+                MousePositionEvent event;
+                event.x = xpos;
+                event.y = ypos;
+
+                if (thisWindow.m_firstMouse)
+                {
+                    thisWindow.m_mousePosX = xpos;
+                    thisWindow.m_mousePosY = ypos;
+                    thisWindow.m_firstMouse = false;
+                }
+
+                event.dx = xpos - thisWindow.m_mousePosX;
+                event.dy = thisWindow.m_mousePosY - ypos;
+
+                thisWindow.m_mousePosX = xpos;
+                thisWindow.m_mousePosY = ypos;
+                thisWindow.runEvent(event);
+            });
     }
 
     void App::run()
@@ -52,7 +110,7 @@ namespace pt
         glEnable(GL_DEPTH_TEST);
 
         if (m_scene)
-            m_scene->init();
+            m_scene->onStart();
 
         double lastFrameTime = glfwGetTime();
         std::string frameInfo;
@@ -64,7 +122,7 @@ namespace pt
             float deltaTime = static_cast<float>(currentFrameTime - lastFrameTime);
 
             if (m_scene)
-                m_scene->update(deltaTime);
+                m_scene->onUpdate(deltaTime);
 
             lastFrameTime = currentFrameTime;
 
@@ -82,11 +140,16 @@ namespace pt
             glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
             if (m_scene)
-                m_scene->render();
+                m_scene->onRender();
 
             glfwSwapBuffers(m_window);
             glfwPollEvents();
         }
         glfwTerminate();
+    }
+
+    void App::close()
+    {
+        glfwSetWindowShouldClose(m_window, true);
     }
 }

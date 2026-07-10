@@ -2,31 +2,15 @@
 #include <cstdint>
 #include <iostream>
 
-struct DEIC
-{
-    DEIC(uint32_t c, uint32_t ic, uint32_t fi, int32_t bv, uint32_t bi)
-        : count(c), instanceCount(ic), firstIndex(fi), basevertex(bv), baseInstance(bi)
-    {
-    }
-    uint32_t count;
-    uint32_t instanceCount;
-    uint32_t firstIndex;
-    int32_t basevertex;
-    uint32_t baseInstance;
-};
 namespace pt
 {
     struct Batch
     {
         static constexpr uint32_t mCount = 1000;
-        static constexpr uint32_t vCount = 1000000;
-        static constexpr uint32_t iCount = 6000000;
-
         static constexpr size_t dcSize = mCount * sizeof(DEIC);
         static constexpr size_t mmSize = mCount * sizeof(ModelMatricesData);
-        static constexpr size_t vSize = vCount * sizeof(Vertex);
-        static constexpr size_t iSize = iCount * sizeof(uint32_t);
-
+        uint32_t vCount = 0;
+        uint32_t iCount = 0;
         uint32_t vOffset = 0;
         uint32_t iOffset = 0;
         uint32_t vtArray;
@@ -41,33 +25,38 @@ namespace pt
         std::vector<DEIC> dcArray;
         std::vector<Model*> mPtrArray;
 
+        size_t vSize()
+        {
+            return vCount * sizeof(Vertex);
+        }
+
+        size_t iSize()
+        {
+            return iCount * sizeof(uint32_t);
+        }
+
         size_t vOffsetSize()
         {
             return vOffset * sizeof(Vertex);
         }
+
         size_t iOffsetSize()
         {
             return iOffset * sizeof(uint32_t);
         }
+
         void addData(Model& model)
         {
-            if (((model.mesh.vSize + vOffsetSize()) > vSize) || ((model.mesh.iSize + iOffsetSize()) > iSize))
-            {
-                if ((model.mesh.vSize + vOffsetSize()) > vSize)
-                    std::clog << "Warning!: Batch vertex buffer size is smaller than data + offset\n";
-                if ((model.mesh.iSize + iOffsetSize()) > iSize)
-                    std::clog << "Warning!: Batch index buffer size is smaller than data + offset\n";
+            // Return if mesh is over buffers capacity (prevents error)
+            if (((model.mesh.vSize + vOffsetSize()) > vSize()) || ((model.mesh.iSize + iOffsetSize()) > iSize()))
                 return;
-            }
             glNamedBufferSubData(vBuffer, vOffsetSize(), model.mesh.vSize, model.mesh.vertices.data());
             glNamedBufferSubData(iBuffer, iOffsetSize(), model.mesh.iSize, model.mesh.indices.data());
 
-            dcArray.emplace_back(model.mesh.iCount, 1, iOffset, vOffset, static_cast<uint32_t>(dcArray.size()));
-
-            mmArray.emplace_back(model.getMartices());
-
-            std::cout << model.name << " is batched\n";
+            // Add draw data to  draw command array
+            dcArray.emplace_back(static_cast<uint32_t>(model.mesh.iCount), 1, iOffset, vOffset, static_cast<uint32_t>(dcArray.size()));
         }
+
         void flush()
         {
             for (Model*& model : mPtrArray)
@@ -78,8 +67,16 @@ namespace pt
             vOffset = 0;
             iOffset = 0;
             dcArray.clear();
-            mmArray.clear();
             mPtrArray.clear();
+            reset = true;
+        }
+
+        void reallocate(uint32_t newvcount, uint32_t newicount)
+        {
+            vCount = newvcount;
+            iCount = newicount;
+            glNamedBufferData(vBuffer, newvcount * sizeof(Vertex), nullptr, GL_DYNAMIC_DRAW);
+            glNamedBufferData(iBuffer, newicount * sizeof(uint32_t), nullptr, GL_DYNAMIC_DRAW);
         }
     };
 
@@ -95,9 +92,9 @@ namespace pt
         batch.mmBuffer = buffers[3];
 
         // Vertex buffer
-        glNamedBufferData(batch.vBuffer, batch.vSize, nullptr, GL_DYNAMIC_DRAW);
+        glNamedBufferData(batch.vBuffer, batch.vSize(), nullptr, GL_DYNAMIC_DRAW);
         // Index buffer
-        glNamedBufferData(batch.iBuffer, batch.iSize, nullptr, GL_DYNAMIC_DRAW);
+        glNamedBufferData(batch.iBuffer, batch.iSize(), nullptr, GL_DYNAMIC_DRAW);
         // Draw Command buffer
         glNamedBufferStorage(batch.dcBuffer, batch.dcSize, nullptr, GL_DYNAMIC_STORAGE_BIT);
         // Model Matrices buffer
@@ -132,6 +129,7 @@ namespace pt
 
         // Draw Command array setup
         batch.dcArray.reserve(batch.mCount);
+
         // Model Matrices array setup
         batch.mmArray.reserve(batch.mCount);
 
@@ -146,29 +144,21 @@ namespace pt
     {
         if (!model.batched)
         {
+            // Find the capacity of the buffers
             uint32_t vTotal = batch.vOffset + model.mesh.vCount;
             uint32_t iTotal = batch.iOffset + model.mesh.iCount;
-            std::clog << "vertex offset = " << batch.vOffset << '\n';
-            std::clog << "index offset = " << batch.iOffset << '\n';
-            std::clog << "vertex count = " << model.mesh.vCount << '\n';
-            std::clog << "index count = " << model.mesh.iCount << '\n';
 
-            if (vTotal > batch.vCount || iTotal > batch.iCount)
+            // Draw meshes already in the buffers and reallocate for new meshes
+            if (vTotal > batch.vCount || iTotal > batch.iCount || batch.mmArray.size() > batch.mCount)
             {
-                if (vTotal > batch.vCount)
-                    std::clog << "vertex total(" << vTotal << ") > batch vertex count(" << batch.vCount << ")\n";
-                if (iTotal > batch.iCount)
-                    std::clog << "index total(" << iTotal << ") > batch index count(" << batch.iCount << ")\n";
-
-                std::clog << "New Batch\n";
-
                 BatchRenderer::draw();
 
                 batch.flush();
 
-                batch.reset = true;
+                batch.reallocate(vTotal, iTotal);
             }
 
+            // Batch mesh data to buffers
             batch.addData(model);
 
             batch.vOffset += model.mesh.vCount;
@@ -177,6 +167,7 @@ namespace pt
             model.batched = true;
             batch.mPtrArray.push_back(&model);
         }
+        batch.mmArray.emplace_back(model.getMartices());
     }
 
     void BatchRenderer::draw()
@@ -184,6 +175,8 @@ namespace pt
         size_t mCount = batch.dcArray.size();
         size_t dcSize = mCount * sizeof(DEIC);
         size_t mmSize = mCount * sizeof(ModelMatricesData);
+
+        // Update draw command buffer only on new batches
         if (batch.reset)
         {
             glNamedBufferSubData(batch.dcBuffer, 0, dcSize, batch.dcArray.data());
@@ -191,8 +184,9 @@ namespace pt
         }
 
         glNamedBufferSubData(batch.mmBuffer, 0, mmSize, batch.mmArray.data());
+        batch.mmArray.clear();
 
         glBindVertexArray(batch.vtArray);
-        glMultiDrawElementsIndirect(GL_TRIANGLES, GL_UNSIGNED_INT, 0, 2, 0);
+        glMultiDrawElementsIndirect(GL_TRIANGLES, GL_UNSIGNED_INT, 0, mCount, 0);
     }
 }

@@ -17,13 +17,20 @@ namespace pt
         template<typename T>
         void setScene();
         void run();
+        GLFWwindow* getWindow() { return m_window; }
+        void close();
     private:
         App();
+        void runEvent(Event& event);
+        void eventCallbacks();
     public:
         Config config;
+        int renderWidth = 0, renderHeight= 0;
     private:
         GLFWwindow* m_window;
         std::unique_ptr<Scene> m_scene;
+        double m_mousePosX = 0.0, m_mousePosY = 0.0;
+        bool m_firstMouse;
     };
 
     template<typename T>

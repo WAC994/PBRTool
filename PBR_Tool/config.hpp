@@ -8,6 +8,8 @@ namespace pt
         std::string GPURenderer = "Unknown";
         int width = 1280;
         int height = 720;
-        bool enableVSync = false;
+        bool fullscreen = false;
+        bool vSync = false;
+        bool hideCursor = true;
     };
 }

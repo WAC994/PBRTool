@@ -13,7 +13,9 @@ target_sources(PBR_Tool_Core PUBLIC pbr_tool_core.hpp
     framebuffer.hpp
     batch_renderer.hpp
     transform.hpp
-    model.hpp)
+    model.hpp
+    event.hpp
+    inputs.hpp)
 
 target_sources(PBR_Tool_Core PRIVATE pbr_tool_core.cpp
     vendor/glad/src/gl.c
@@ -29,7 +31,8 @@ target_sources(PBR_Tool_Core PRIVATE pbr_tool_core.cpp
     debug.hpp
     batch_renderer.cpp
     transform.cpp
-    model.cpp)
+    model.cpp
+    inputs.cpp)
 
 target_include_directories(PBR_Tool_Core PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}
     ${CMAKE_CURRENT_SOURCE_DIR}/vendor/glad/include
