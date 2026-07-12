@@ -15,10 +15,17 @@ layout(location = 2) in vec3 a_tangent;
 layout(location = 3) in vec2 a_texcoord;
 layout(location = 4) in float a_material;
 
-layout(location = 0) out vec2 v_texcoord;
+out VERTEX
+{
+    vec3 position;
+    vec3 normal;
+    vec2 texcoord;
+    float material;
+    mat3 tbn_matrix;
+}vertex;
 
 void main()
 {
     gl_Position = camera.perspective * camera.view * vec4(a_position, 1.0);
-    v_texcoord = a_texcoord;
+    vertex.texcoord = a_texcoord;
 }

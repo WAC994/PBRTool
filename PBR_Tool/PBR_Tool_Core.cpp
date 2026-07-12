@@ -5,7 +5,7 @@
 #include <string>
 #include <format>
 #include <iostream>
-#include <cstdint>
+#include "utilities.hpp"
 
 namespace pt
 {
@@ -21,6 +21,7 @@ namespace pt
         glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 4);
         glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 6);
         glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
+        glfwWindowHint(GLFW_OPENGL_DEBUG_CONTEXT, true);
 
         m_window = glfwCreateWindow(config.width, config.height, "PBR Tool", config.fullscreen ? glfwGetPrimaryMonitor() : nullptr, nullptr);
 
@@ -45,9 +46,7 @@ namespace pt
         }
 
         config.GPURenderer = reinterpret_cast<const char*>(glGetString(GL_RENDERER));
-
-        glViewport(0, 0, config.width, config.height);
-
+        
         eventCallbacks();
     }
 
@@ -102,6 +101,15 @@ namespace pt
                 thisWindow.m_mousePosY = ypos;
                 thisWindow.runEvent(event);
             });
+
+        glfwSetFramebufferSizeCallback(m_window, [](GLFWwindow* window, int width, int height)
+            {
+                App& thisWindow = *((App*)glfwGetWindowUserPointer(window));
+                FramebufferResizeEvent event;
+                event.width = width;
+                event.height = height;
+                thisWindow.runEvent(event);
+            });
     }
 
     void App::run()
@@ -138,7 +146,7 @@ namespace pt
             }
 
             glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-
+            
             if (m_scene)
                 m_scene->onRender();
 

@@ -189,12 +189,18 @@ uint32_t genDepthStencilRenderBuffer(int width, int height)
 
 uint64_t genBindless2DTexture(int width, int height, uint32_t bitFormat, uint32_t warp, uint32_t filter, bool useMips, uint32_t mipMapNum)
 {
-    return glGetTextureHandleARB(gen2DTexture(width, height, bitFormat, warp, filter, useMips, mipMapNum));
+    uint32_t texture = gen2DTexture(width, height, bitFormat, warp, filter, useMips, mipMapNum);
+    uint64_t bindlessTexture = glGetTextureHandleARB(texture);
+    glMakeTextureHandleResidentARB(bindlessTexture);
+    return bindlessTexture;
 }
 
 uint64_t genBindless2DTextureFromFile(const std::string_view& path, uint32_t bitFormat, uint32_t warp, bool useMips, uint32_t mipMapNum)
 {
-    return glGetTextureHandleARB(gen2DTextureFromFile(path, bitFormat, warp, useMips, mipMapNum));
+    uint32_t texture = gen2DTextureFromFile(path, bitFormat, warp, useMips, mipMapNum);
+    uint64_t bindlessTexture = glGetTextureHandleARB(texture);
+    glMakeTextureHandleResidentARB(bindlessTexture);
+    return bindlessTexture;
 }
 
 std::map<GLuint, TextureData> s_textureCache;

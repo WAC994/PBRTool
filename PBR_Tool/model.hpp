@@ -3,6 +3,8 @@
 #include <filesystem>
 #include <string>
 #include "mesh.hpp"
+#include <vector>
+#include "material.hpp"
 
 namespace pt
 {
@@ -10,14 +12,15 @@ namespace pt
   {
   public:
     Model(const std::filesystem::path& path);
+    ~Model();
     void draw();
-  private:
   public:
-    std::string name;
     Mesh mesh;
-    bool batched = false;
+    std::string name;
+    int32_t batchID = -1;
+    bool isBatched = false;
   private:
-    uint32_t m_index;
-    static uint32_t s_modelOffset;
+    std::string m_directory;
+    static uint32_t s_materialIDOffset;
   };
 }

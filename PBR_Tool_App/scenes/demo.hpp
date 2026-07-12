@@ -8,6 +8,7 @@
 #include <model.hpp>
 #include <batch_renderer.hpp>
 #include <inputs.hpp>
+#include <material.hpp>
 
 using namespace pt;
 
@@ -35,7 +36,7 @@ class ScreenColor : public Scene
 class MeshColor : public Scene
 {
     Camera camera;
-    Mesh demo = Mesh("assets/models/headphone/headphone.gltf");
+    Mesh demo = Mesh("assets/models/headphone/headphone.gltf", 0);
     Shader color = Shader("assets/shaders/mesh.vert", "assets/shaders/color.frag", SHADERFILEINFO::TEXTFILE);
     void onStart() override
     {
@@ -52,7 +53,7 @@ class MeshColor : public Scene
 class MeshTexture : public Scene
 {
     Camera camera;
-    Mesh demo = Mesh("assets/models/headphone/headphone.gltf");
+    Mesh demo = Mesh("assets/models/headphone/headphone.gltf", 0);
     Shader shader = Shader("assets/shaders/mesh.vert", "assets/shaders/texture.frag", SHADERFILEINFO::TEXTFILE);
     uint32_t texture = gen2DTextureFromFile("assets/models/headphone/Headphones_1001_baseColor.jpg");
     void onStart() override
@@ -73,8 +74,9 @@ class MeshBatchedTexture : public Scene
     Model headphone = Model("assets/models/headphone/headphone.gltf");
     Model M870 = Model("assets/models/M870/M870.gltf");
     Model gravity_generator = Model("assets/models/gravity-generator/gravity-generator.gltf");
-    Shader shader = Shader("assets/shaders/mesh_batched.vert", "assets/shaders/texture.frag", SHADERFILEINFO::TEXTFILE);
-    uint32_t texture = gen2DTextureFromFile("assets/models/headphone/Headphones_1001_baseColor.jpg");
+    Shader shader = Shader("assets/shaders/mesh_batched.vert", "assets/shaders/material.frag", SHADERFILEINFO::TEXTFILE);
+    uint64_t texture = genBindless2DTextureFromFile("assets/models/headphone/Headphones_1001_baseColor.jpg");
+    MaterialManager materials;
 
     void onStart() override
     {
@@ -95,16 +97,18 @@ class MeshBatchedTexture : public Scene
     void onUpdate(float deltaTime) override
     {
         camera.move(Input::axis2D(), deltaTime);
-
         headphone.translate(glm::vec3(Input::axis2D(AxisInput::ARROWS) * deltaTime, 0.0f));
     }
 
     void onRender() override
     {
-        shader.bindTexture(0, texture);
-        BatchRenderer::add(headphone);
-        BatchRenderer::add(M870);
+        shader.use();
         BatchRenderer::add(gravity_generator);
+
+        BatchRenderer::add(M870);
+        BatchRenderer::add(headphone);
         BatchRenderer::draw();
+
+        materials.update();
     }
 };

@@ -25,7 +25,6 @@ namespace pt
         void eventCallbacks();
     public:
         Config config;
-        int renderWidth = 0, renderHeight= 0;
     private:
         GLFWwindow* m_window;
         std::unique_ptr<Scene> m_scene;
