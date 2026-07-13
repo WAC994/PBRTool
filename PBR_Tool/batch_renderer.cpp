@@ -16,8 +16,9 @@ namespace pt
         static constexpr size_t drawCommandSize = meshCapacity * sizeof(DEIC);
         static constexpr size_t modelMatricesSize = meshCapacity * sizeof(ModelMatricesData);
 
-        size_t vertexCapacity = 0;
-        size_t indexCapacity = 0;
+        static constexpr size_t vertexCapacity = 1000000;
+        static constexpr size_t indexCapacity = 6000000;
+
         size_t vertexOffset = 0;
         size_t indexOffset = 0;
 
@@ -65,7 +66,6 @@ namespace pt
             // Index buffer
             glNamedBufferData(indexBuffer, indexCapacitySize(), nullptr, GL_DYNAMIC_DRAW);
 
-            GLbitfield storageFlags = GL_MAP_WRITE_BIT | GL_MAP_PERSISTENT_BIT | GL_MAP_COHERENT_BIT;
             // Draw Command buffer
             glNamedBufferStorage(drawCommandBuffer, drawCommandSize, nullptr, GL_DYNAMIC_STORAGE_BIT);
             // Model Matrices buffer
@@ -75,8 +75,6 @@ namespace pt
             glCreateVertexArrays(1, &vertexArray);
             glVertexArrayVertexBuffer(vertexArray, 0, vertexBuffer, 0, sizeof(Vertex));
             glVertexArrayElementBuffer(vertexArray, indexBuffer);
-
-            constexpr GLuint positionLoc = 0, normalLoc = 1, tangentLoc = 2, texCoordLoc = 3, materialLoc = 4;
 
             glEnableVertexArrayAttrib(vertexArray, positionLoc);
             glVertexArrayAttribFormat(vertexArray, positionLoc, 3, GL_FLOAT, GL_FALSE, offsetof(Vertex, position));
@@ -157,10 +155,8 @@ namespace pt
             if ((vertexTotal > vertexCapacity) || (indexTotal > indexCapacity))
             {
                 draw();
-
-                vertexCapacity = vertexTotal;
-                indexCapacity = indexTotal;
-                reallocateBuffers();
+                add(model);
+                return;
             }
 
             getData(model);
@@ -179,20 +175,20 @@ namespace pt
         }
     };
 
-    static Batch batch;
+    static Batch s_instance;
 
     void BatchRenderer::init()
     {
-        batch.init();
+        s_instance.init();
     }
 
     void BatchRenderer::add(Model& model)
     {
-        batch.add(model);
+        s_instance.add(model);
     }
 
     void BatchRenderer::draw()
     {
-        batch.draw();
+        s_instance.draw();
     }
 }

@@ -31,4 +31,7 @@ namespace pt
     // Global array sizes
     static constexpr uint32_t MAX_FRAMEBUFFER_ATTACHMENTS = 32;
     static constexpr uint32_t MAX_MATERIALS = 1024;
+
+    // Vertex array binding locations
+    static constexpr GLuint positionLoc = 0, normalLoc = 1, tangentLoc = 2, texCoordLoc = 3, materialLoc = 4;
 }
