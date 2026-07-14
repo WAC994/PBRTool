@@ -50,12 +50,6 @@ namespace pt
         s_materialIDOffset += materialCount;
     }
 
-    Model::~Model()
-    {
-        batchID = -1;
-        isBatched = false;
-    }
-
     void Model::draw()
     {
         mesh.draw();

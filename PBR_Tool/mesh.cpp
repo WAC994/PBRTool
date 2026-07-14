@@ -166,27 +166,26 @@ namespace pt
             glVertexArrayVertexBuffer(m_vArray, 0, m_vBuffer, 0, sizeof(Vertex));
             glVertexArrayElementBuffer(m_vArray, m_iBuffer);
 
-            constexpr GLuint positionLoc = 0, normalLoc = 1, tangentLoc = 2, texCoordLoc = 3, materialLoc = 4;
 
-            glEnableVertexArrayAttrib(m_vArray, positionLoc);
-            glVertexArrayAttribFormat(m_vArray, positionLoc, 3, GL_FLOAT, GL_FALSE, offsetof(Vertex, position));
-            glVertexArrayAttribBinding(m_vArray, positionLoc, 0);
+            glEnableVertexArrayAttrib(m_vArray, POSITION_LOCATION);
+            glVertexArrayAttribFormat(m_vArray, POSITION_LOCATION, 3, GL_FLOAT, GL_FALSE, offsetof(Vertex, position));
+            glVertexArrayAttribBinding(m_vArray, POSITION_LOCATION, 0);
 
-            glEnableVertexArrayAttrib(m_vArray, normalLoc);
-            glVertexArrayAttribFormat(m_vArray, normalLoc, 3, GL_FLOAT, GL_FALSE, offsetof(Vertex, normal));
-            glVertexArrayAttribBinding(m_vArray, normalLoc, 0);
+            glEnableVertexArrayAttrib(m_vArray, NORMAL_LOCATION);
+            glVertexArrayAttribFormat(m_vArray, NORMAL_LOCATION, 3, GL_FLOAT, GL_FALSE, offsetof(Vertex, normal));
+            glVertexArrayAttribBinding(m_vArray, NORMAL_LOCATION, 0);
 
-            glEnableVertexArrayAttrib(m_vArray, tangentLoc);
-            glVertexArrayAttribFormat(m_vArray, tangentLoc, 3, GL_FLOAT, GL_FALSE, offsetof(Vertex, tangent));
-            glVertexArrayAttribBinding(m_vArray, tangentLoc, 0);
+            glEnableVertexArrayAttrib(m_vArray, TANGENT_LOCATION);
+            glVertexArrayAttribFormat(m_vArray, TANGENT_LOCATION, 3, GL_FLOAT, GL_FALSE, offsetof(Vertex, tangent));
+            glVertexArrayAttribBinding(m_vArray, TANGENT_LOCATION, 0);
 
-            glEnableVertexArrayAttrib(m_vArray, texCoordLoc);
-            glVertexArrayAttribFormat(m_vArray, texCoordLoc, 2, GL_FLOAT, GL_FALSE, offsetof(Vertex, texCoord));
-            glVertexArrayAttribBinding(m_vArray, texCoordLoc, 0);
+            glEnableVertexArrayAttrib(m_vArray, TEXTURE_COORDINATE_LOCATION);
+            glVertexArrayAttribFormat(m_vArray, TEXTURE_COORDINATE_LOCATION, 2, GL_FLOAT, GL_FALSE, offsetof(Vertex, texCoord));
+            glVertexArrayAttribBinding(m_vArray, TEXTURE_COORDINATE_LOCATION, 0);
 
-            glEnableVertexArrayAttrib(m_vArray, materialLoc);
-            glVertexArrayAttribFormat(m_vArray, materialLoc, 1, GL_FLOAT, GL_FALSE, offsetof(Vertex, material));
-            glVertexArrayAttribBinding(m_vArray, materialLoc, 0);
+            glEnableVertexArrayAttrib(m_vArray, MATERIAL_LOCATION);
+            glVertexArrayAttribFormat(m_vArray, MATERIAL_LOCATION, 1, GL_FLOAT, GL_FALSE, offsetof(Vertex, material));
+            glVertexArrayAttribBinding(m_vArray, MATERIAL_LOCATION, 0);
         }
         m_vertexArrayIsSet = true;
     }

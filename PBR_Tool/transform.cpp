@@ -17,7 +17,7 @@ namespace pt
         transform = glm::scale(transform, value);
     }
 
-    ModelMatricesData Transform::getMartices()
+    ModelMatrices Transform::getMartices()
     {
         return { transform, glm::transpose(glm::inverse(transform)) };
     }

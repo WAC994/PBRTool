@@ -33,5 +33,9 @@ namespace pt
     static constexpr uint32_t MAX_MATERIALS = 1024;
 
     // Vertex array binding locations
-    static constexpr GLuint positionLoc = 0, normalLoc = 1, tangentLoc = 2, texCoordLoc = 3, materialLoc = 4;
+    static constexpr GLuint POSITION_LOCATION = 4;
+    static constexpr GLuint NORMAL_LOCATION = 3;
+    static constexpr GLuint TANGENT_LOCATION = 2;
+    static constexpr GLuint TEXTURE_COORDINATE_LOCATION = 1;
+    static constexpr GLuint MATERIAL_LOCATION = 0;
 }

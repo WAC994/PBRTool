@@ -33,4 +33,5 @@ void main()
 {
     uint material_id = uint(vertex.material);
     f_color = texture(materials[material_id].color_tex, vertex.texcoord);
+    // f_color = vec4(1.0, 0.5 ,0.25, 1.0);
 }

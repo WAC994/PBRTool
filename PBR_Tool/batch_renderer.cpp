@@ -9,18 +9,23 @@ namespace pt
 {
     struct Batch
     {
-        std::vector<ModelMatricesData> modelMatricesArray;
+        std::vector<ModelMatrices> modelMatricesArray;
         std::vector<DEIC> drawCommandArray;
+        std::vector<Model*> modelPointerArray;
 
         static constexpr uint32_t meshCapacity = 1000;
         static constexpr size_t drawCommandSize = meshCapacity * sizeof(DEIC);
-        static constexpr size_t modelMatricesSize = meshCapacity * sizeof(ModelMatricesData);
+        static constexpr size_t modelMatricesSize = meshCapacity * sizeof(ModelMatrices);
 
         static constexpr size_t vertexCapacity = 1000000;
+        static constexpr size_t vertexCapacitySize = vertexCapacity * sizeof(Vertex);
+
         static constexpr size_t indexCapacity = 6000000;
+        static constexpr size_t indexCapacitySize = indexCapacity * sizeof(uint32_t);
 
         size_t vertexOffset = 0;
         size_t indexOffset = 0;
+        uint32_t batchCount = 0;
 
         GLuint vertexArray;
         GLuint vertexBuffer;
@@ -28,29 +33,8 @@ namespace pt
         GLuint drawCommandBuffer;
         GLuint modelMatricesBuffer;
 
-        inline size_t vertexCapacitySize() { return vertexCapacity * sizeof(Vertex); }
-
-        inline size_t indexCapacitySize() { return indexCapacity * sizeof(uint32_t); }
-
         inline size_t vertexOffsetSize() { return vertexOffset * sizeof(Vertex); }
-
         inline size_t indexOffsetSize() { return indexOffset * sizeof(uint32_t); }
-
-        GLint getVertexBufferSize()
-        {
-            GLint vertexBufferSize = 0;
-            glGetNamedBufferParameteriv(vertexBuffer, GL_BUFFER_SIZE, &vertexBufferSize);
-            return vertexBufferSize;
-        }
-        size_t getVertexBufferCount() { return getVertexBufferSize() / sizeof(Vertex); }
-
-        GLint getIndexBufferSize()
-        {
-            GLint indexBufferSize = 0;
-            glGetNamedBufferParameteriv(indexBuffer, GL_BUFFER_SIZE, &indexBufferSize);
-            return indexBufferSize;
-        }
-        size_t getIndexBufferCount() { return getIndexBufferSize() / sizeof(uint32_t); }
 
         void init()
         {
@@ -62,12 +46,14 @@ namespace pt
             modelMatricesBuffer = buffers[3];
 
             // Vertex buffer
-            glNamedBufferData(vertexBuffer, vertexCapacitySize(), nullptr, GL_DYNAMIC_DRAW);
+            glNamedBufferStorage(vertexBuffer, vertexCapacitySize, nullptr, GL_DYNAMIC_STORAGE_BIT);
+
             // Index buffer
-            glNamedBufferData(indexBuffer, indexCapacitySize(), nullptr, GL_DYNAMIC_DRAW);
+            glNamedBufferStorage(indexBuffer, indexCapacitySize, nullptr, GL_DYNAMIC_STORAGE_BIT);
 
             // Draw Command buffer
             glNamedBufferStorage(drawCommandBuffer, drawCommandSize, nullptr, GL_DYNAMIC_STORAGE_BIT);
+
             // Model Matrices buffer
             glNamedBufferStorage(modelMatricesBuffer, modelMatricesSize, nullptr, GL_DYNAMIC_STORAGE_BIT);
 
@@ -76,25 +62,25 @@ namespace pt
             glVertexArrayVertexBuffer(vertexArray, 0, vertexBuffer, 0, sizeof(Vertex));
             glVertexArrayElementBuffer(vertexArray, indexBuffer);
 
-            glEnableVertexArrayAttrib(vertexArray, positionLoc);
-            glVertexArrayAttribFormat(vertexArray, positionLoc, 3, GL_FLOAT, GL_FALSE, offsetof(Vertex, position));
-            glVertexArrayAttribBinding(vertexArray, positionLoc, 0);
+            glEnableVertexArrayAttrib(vertexArray, POSITION_LOCATION);
+            glVertexArrayAttribFormat(vertexArray, POSITION_LOCATION, 3, GL_FLOAT, GL_FALSE, offsetof(Vertex, position));
+            glVertexArrayAttribBinding(vertexArray, POSITION_LOCATION, 0);
 
-            glEnableVertexArrayAttrib(vertexArray, normalLoc);
-            glVertexArrayAttribFormat(vertexArray, normalLoc, 3, GL_FLOAT, GL_FALSE, offsetof(Vertex, normal));
-            glVertexArrayAttribBinding(vertexArray, normalLoc, 0);
+            glEnableVertexArrayAttrib(vertexArray, NORMAL_LOCATION);
+            glVertexArrayAttribFormat(vertexArray, NORMAL_LOCATION, 3, GL_FLOAT, GL_FALSE, offsetof(Vertex, normal));
+            glVertexArrayAttribBinding(vertexArray, NORMAL_LOCATION, 0);
 
-            glEnableVertexArrayAttrib(vertexArray, tangentLoc);
-            glVertexArrayAttribFormat(vertexArray, tangentLoc, 3, GL_FLOAT, GL_FALSE, offsetof(Vertex, tangent));
-            glVertexArrayAttribBinding(vertexArray, tangentLoc, 0);
+            glEnableVertexArrayAttrib(vertexArray, TANGENT_LOCATION);
+            glVertexArrayAttribFormat(vertexArray, TANGENT_LOCATION, 3, GL_FLOAT, GL_FALSE, offsetof(Vertex, tangent));
+            glVertexArrayAttribBinding(vertexArray, TANGENT_LOCATION, 0);
 
-            glEnableVertexArrayAttrib(vertexArray, texCoordLoc);
-            glVertexArrayAttribFormat(vertexArray, texCoordLoc, 2, GL_FLOAT, GL_FALSE, offsetof(Vertex, texCoord));
-            glVertexArrayAttribBinding(vertexArray, texCoordLoc, 0);
+            glEnableVertexArrayAttrib(vertexArray, TEXTURE_COORDINATE_LOCATION);
+            glVertexArrayAttribFormat(vertexArray, TEXTURE_COORDINATE_LOCATION, 2, GL_FLOAT, GL_FALSE, offsetof(Vertex, texCoord));
+            glVertexArrayAttribBinding(vertexArray, TEXTURE_COORDINATE_LOCATION, 0);
 
-            glEnableVertexArrayAttrib(vertexArray, materialLoc);
-            glVertexArrayAttribFormat(vertexArray, materialLoc, 1, GL_FLOAT, GL_FALSE, offsetof(Vertex, material));
-            glVertexArrayAttribBinding(vertexArray, materialLoc, 0);
+            glEnableVertexArrayAttrib(vertexArray, MATERIAL_LOCATION);
+            glVertexArrayAttribFormat(vertexArray, MATERIAL_LOCATION, 1, GL_FLOAT, GL_FALSE, offsetof(Vertex, material));
+            glVertexArrayAttribBinding(vertexArray, MATERIAL_LOCATION, 0);
 
             // Draw Command array setup
             drawCommandArray.reserve(meshCapacity);
@@ -109,25 +95,16 @@ namespace pt
             glBindBufferBase(GL_SHADER_STORAGE_BUFFER, TRANSFORM_SSBO_BINDING_POINT, modelMatricesBuffer);
         }
 
-        void flush()
-        {
-            vertexOffset = 0;
-            indexOffset = 0;
-            drawCommandArray.clear();
-            modelMatricesArray.clear();
-        }
-
         void getData(Model& model)
         {
-            if ((model.mesh.vertexCount + vertexOffset > getVertexBufferCount()) || (model.mesh.indexCount + indexOffset > getIndexBufferCount()))
-            {
-                std::cout << std::format("Error in vertex: offset({}) + data({}) > capacity({})\n", vertexOffset, model.mesh.vertexCount, getVertexBufferCount());
-                std::cout << std::format("Error in index: offset({}) + data({}) > capacity({})\n", indexOffset, model.mesh.indexCount, getIndexBufferCount());
-                return;
-            }
+            modelPointerArray.push_back(&model);
 
-            glNamedBufferSubData(vertexBuffer, vertexOffsetSize(), model.mesh.vertexSize, model.mesh.vertices.data());
-            glNamedBufferSubData(indexBuffer, indexOffsetSize(), model.mesh.indexSize, model.mesh.indices.data());
+            if (model.mesh.batchIndex != batchCount)
+            {
+                model.mesh.batchIndex = batchCount;
+                glNamedBufferSubData(vertexBuffer, vertexOffsetSize(), model.mesh.vertexSize, model.mesh.vertices.data());
+                glNamedBufferSubData(indexBuffer, indexOffsetSize(), model.mesh.indexSize, model.mesh.indices.data());
+            }
 
             drawCommandArray.emplace_back(
                 static_cast<uint32_t>(model.mesh.indexCount),
@@ -140,11 +117,13 @@ namespace pt
             modelMatricesArray.emplace_back(model.getMartices());
         }
 
-        void reallocateBuffers()
+        inline void resetBatchIndices()
         {
-            glNamedBufferData(vertexBuffer, vertexCapacity * sizeof(Vertex), nullptr, GL_DYNAMIC_DRAW);
-            glNamedBufferData(indexBuffer, indexCapacity * sizeof(uint32_t), nullptr, GL_DYNAMIC_DRAW);
-            std::cout << std::format("New buffer sizes: {} vertices, {} indices\n", getVertexBufferCount(), getIndexBufferCount());
+            for (auto model : modelPointerArray)
+            {
+                if (model)
+                    model->mesh.batchIndex = -1;
+            }
         }
 
         void add(Model& model)
@@ -155,6 +134,7 @@ namespace pt
             if ((vertexTotal > vertexCapacity) || (indexTotal > indexCapacity))
             {
                 draw();
+                resetBatchIndices();
                 add(model);
                 return;
             }
@@ -163,15 +143,24 @@ namespace pt
 
             vertexOffset += model.mesh.vertexCount;
             indexOffset += model.mesh.indexCount;
+
+            batchCount++;
         }
 
         void draw()
         {
-            glNamedBufferSubData(drawCommandBuffer, 0, sizeof(DEIC)*drawCommandArray.size(), drawCommandArray.data());
-            glNamedBufferSubData(modelMatricesBuffer, 0, sizeof(ModelMatricesData)*modelMatricesArray.size(), modelMatricesArray.data());
+            glNamedBufferSubData(drawCommandBuffer, 0, sizeof(DEIC) * drawCommandArray.size(), drawCommandArray.data());
+            glNamedBufferSubData(modelMatricesBuffer, 0, sizeof(ModelMatrices) * modelMatricesArray.size(), modelMatricesArray.data());
             bindVertexArray(vertexArray);
             glMultiDrawElementsIndirect(GL_TRIANGLES, GL_UNSIGNED_INT, 0, drawCommandArray.size(), 0);
-            flush();
+
+            vertexOffset = 0;
+            indexOffset = 0;
+            batchCount = 0;
+
+            drawCommandArray.clear();
+            modelMatricesArray.clear();
+            modelPointerArray.clear();
         }
     };
 
