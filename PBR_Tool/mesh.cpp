@@ -16,43 +16,7 @@ namespace pt
             return;
         }
 
-        uint32_t iOffset = 0;
-        for (uint32_t i = 0; i < model->mNumMeshes; ++i)
-        {
-            aiMesh* mesh = model->mMeshes[i];
-            for (uint32_t j = 0; j < mesh->mNumVertices; ++j)
-            {
-                Vertex vertex{};
-                vertex.position = { mesh->mVertices[j].x, mesh->mVertices[j].y, mesh->mVertices[j].z };
-                vertex.normal = { mesh->mNormals[j].x, mesh->mNormals[j].y, mesh->mNormals[j].z };
-                vertex.tangent = { mesh->mTangents[j].x, mesh->mTangents[j].y, mesh->mTangents[j].z };
-                vertex.texCoord = { mesh->mTextureCoords[0][j].x, mesh->mTextureCoords[0][j].y };
-                vertex.material = static_cast<float>(mesh->mMaterialIndex + materialid);
-                vertices.push_back(vertex);
-            }
-            uint32_t iCount = 0;
-            for (uint32_t j = 0; j < mesh->mNumFaces; ++j)
-            {
-                aiFace face = mesh->mFaces[j];
-                for (uint32_t k = 0; k < face.mNumIndices; ++k)
-                {
-                    indices.push_back(face.mIndices[k] + iOffset);
-                    ++iCount;
-                }
-            }
-            iOffset += iCount;
-        }
-
-        vertices.shrink_to_fit();
-        indices.shrink_to_fit();
-
-        vertexCount = vertices.size();
-        vertexSize = vertexCount * sizeof(Vertex);
-
-        indexCount = indices.size();
-        indexSize = indexCount * sizeof(uint32_t);
-
-        setupVertexArray();
+        loadASSIMPModel(model, materialid);
     }
 
     Mesh::~Mesh()
@@ -67,7 +31,6 @@ namespace pt
 
     void Mesh::loadASSIMPModel(const aiScene* model, uint32_t materialid)
     {
-        
         uint32_t iOffset = 0;
         for (uint32_t i = 0; i < model->mNumMeshes; ++i)
         {
@@ -103,6 +66,8 @@ namespace pt
 
         indexCount = indices.size();
         indexSize = indexCount * sizeof(uint32_t);
+
+        drawCommand.count = vertexCount;
 
         setupVertexArray();
     }
@@ -138,6 +103,8 @@ namespace pt
         indexCount = indices.size();
         indexSize = indexCount * sizeof(uint32_t);
 
+        drawCommand.count = vertexCount;
+
         setupVertexArray();
     }
 
@@ -166,7 +133,6 @@ namespace pt
             glVertexArrayVertexBuffer(m_vArray, 0, m_vBuffer, 0, sizeof(Vertex));
             glVertexArrayElementBuffer(m_vArray, m_iBuffer);
 
-
             glEnableVertexArrayAttrib(m_vArray, POSITION_LOCATION);
             glVertexArrayAttribFormat(m_vArray, POSITION_LOCATION, 3, GL_FLOAT, GL_FALSE, offsetof(Vertex, position));
             glVertexArrayAttribBinding(m_vArray, POSITION_LOCATION, 0);
@@ -186,7 +152,8 @@ namespace pt
             glEnableVertexArrayAttrib(m_vArray, MATERIAL_LOCATION);
             glVertexArrayAttribFormat(m_vArray, MATERIAL_LOCATION, 1, GL_FLOAT, GL_FALSE, offsetof(Vertex, material));
             glVertexArrayAttribBinding(m_vArray, MATERIAL_LOCATION, 0);
+
+            m_vertexArrayIsSet = true;
         }
-        m_vertexArrayIsSet = true;
     }
 }

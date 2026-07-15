@@ -8,7 +8,7 @@ namespace pt
     {
     public:
         static void init();
-        static void add(Model& model);
+        static void batch(Model& model);
         static void draw();
     };
 }

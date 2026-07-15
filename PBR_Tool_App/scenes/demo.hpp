@@ -103,10 +103,13 @@ class MeshBatchedTexture : public Scene
     void onRender() override
     {
         shader.use();
-        BatchRenderer::add(gravity_generator);
-
-        BatchRenderer::add(M870);
-        BatchRenderer::add(headphone);
+        if (Input::keyPressed(GLFW_KEY_U))
+        {
+            BatchRenderer::batch(gravity_generator);
+        }
+        
+        BatchRenderer::batch(M870);
+        BatchRenderer::batch(headphone);
         BatchRenderer::draw();
 
         materials.update();

@@ -33,7 +33,7 @@ namespace pt
     public:
         std::vector<Vertex> vertices;
         std::vector<uint32_t> indices;
-        int32_t batchIndex = -1;
+        DEIC drawCommand;
         size_t vertexCount = 0, vertexSize = 0, indexCount = 0, indexSize = 0;
     private:
         GLuint m_vArray, m_vBuffer, m_iBuffer;

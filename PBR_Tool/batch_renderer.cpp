@@ -3,29 +3,27 @@
 #include <iostream>
 #include "pbr_tool_core.hpp"
 #include <format>
+#include <unordered_map>
 
 namespace pt
-
 {
     struct Batch
     {
         std::vector<ModelMatrices> modelMatricesArray;
         std::vector<DEIC> drawCommandArray;
-        std::vector<Model*> modelPointerArray;
 
         static constexpr uint32_t meshCapacity = 1000;
         static constexpr size_t drawCommandSize = meshCapacity * sizeof(DEIC);
         static constexpr size_t modelMatricesSize = meshCapacity * sizeof(ModelMatrices);
 
         static constexpr size_t vertexCapacity = 1000000;
-        static constexpr size_t vertexCapacitySize = vertexCapacity * sizeof(Vertex);
+        static constexpr size_t vertexCapacitySize = vertexCapacity * sizeof(Vertex); // 48 Mega-Bytes
 
         static constexpr size_t indexCapacity = 6000000;
-        static constexpr size_t indexCapacitySize = indexCapacity * sizeof(uint32_t);
+        static constexpr size_t indexCapacitySize = indexCapacity * sizeof(uint32_t); // 12 Mega-Bytes
 
         size_t vertexOffset = 0;
         size_t indexOffset = 0;
-        uint32_t batchCount = 0;
 
         GLuint vertexArray;
         GLuint vertexBuffer;
@@ -97,14 +95,8 @@ namespace pt
 
         void getData(Model& model)
         {
-            modelPointerArray.push_back(&model);
-
-            if (model.mesh.batchIndex != batchCount)
-            {
-                model.mesh.batchIndex = batchCount;
-                glNamedBufferSubData(vertexBuffer, vertexOffsetSize(), model.mesh.vertexSize, model.mesh.vertices.data());
-                glNamedBufferSubData(indexBuffer, indexOffsetSize(), model.mesh.indexSize, model.mesh.indices.data());
-            }
+            glNamedBufferSubData(vertexBuffer, vertexOffsetSize(), model.mesh.vertexSize, model.mesh.vertices.data());
+            glNamedBufferSubData(indexBuffer, indexOffsetSize(), model.mesh.indexSize, model.mesh.indices.data());
 
             drawCommandArray.emplace_back(
                 static_cast<uint32_t>(model.mesh.indexCount),
@@ -117,16 +109,7 @@ namespace pt
             modelMatricesArray.emplace_back(model.getMartices());
         }
 
-        inline void resetBatchIndices()
-        {
-            for (auto model : modelPointerArray)
-            {
-                if (model)
-                    model->mesh.batchIndex = -1;
-            }
-        }
-
-        void add(Model& model)
+        void batch(Model& model)
         {
             size_t vertexTotal = vertexOffset + model.mesh.vertexCount;
             size_t indexTotal = indexOffset + model.mesh.indexCount;
@@ -134,8 +117,7 @@ namespace pt
             if ((vertexTotal > vertexCapacity) || (indexTotal > indexCapacity))
             {
                 draw();
-                resetBatchIndices();
-                add(model);
+                batch(model);
                 return;
             }
 
@@ -143,8 +125,6 @@ namespace pt
 
             vertexOffset += model.mesh.vertexCount;
             indexOffset += model.mesh.indexCount;
-
-            batchCount++;
         }
 
         void draw()
@@ -156,11 +136,9 @@ namespace pt
 
             vertexOffset = 0;
             indexOffset = 0;
-            batchCount = 0;
 
             drawCommandArray.clear();
             modelMatricesArray.clear();
-            modelPointerArray.clear();
         }
     };
 
@@ -171,9 +149,9 @@ namespace pt
         s_instance.init();
     }
 
-    void BatchRenderer::add(Model& model)
+    void BatchRenderer::batch(Model& model)
     {
-        s_instance.add(model);
+        s_instance.batch(model);
     }
 
     void BatchRenderer::draw()
