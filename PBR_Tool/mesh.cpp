@@ -58,16 +58,7 @@ namespace pt
             iOffset += iCount;
         }
 
-        vertices.shrink_to_fit();
-        indices.shrink_to_fit();
-
-        vertexCount = vertices.size();
-        vertexSize = vertexCount * sizeof(Vertex);
-
-        indexCount = indices.size();
-        indexSize = indexCount * sizeof(uint32_t);
-
-        drawCommand.count = vertexCount;
+        setupMeshData();
 
         setupVertexArray();
     }
@@ -94,16 +85,7 @@ namespace pt
             }
         }
 
-        vertices.shrink_to_fit();
-        indices.shrink_to_fit();
-
-        vertexCount = vertices.size();
-        vertexSize = vertexCount * sizeof(Vertex);
-
-        indexCount = indices.size();
-        indexSize = indexCount * sizeof(uint32_t);
-
-        drawCommand.count = vertexCount;
+        setupMeshData();
 
         setupVertexArray();
     }
@@ -117,7 +99,21 @@ namespace pt
         }
     }
 
-    void Mesh::setupVertexArray()
+    void Mesh::setupMeshData()
+    {
+        vertices.shrink_to_fit();
+        indices.shrink_to_fit();
+
+        vertexCount = vertices.size();
+        vertexSize = vertexCount * sizeof(Vertex);
+
+        indexCount = indices.size();
+        indexSize = indexCount * sizeof(uint32_t);
+
+        drawCommand.count = indexCount;
+    }
+
+void Mesh::setupVertexArray()
     {
         if (!m_vertexArrayIsSet)
         {

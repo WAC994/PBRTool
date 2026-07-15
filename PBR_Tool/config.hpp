@@ -11,6 +11,6 @@ namespace pt
         bool fullscreen = false;
         bool vSync = false;
         bool hideCursor = true;
-        bool debug = true;
+        bool debug = false;
     };
 }

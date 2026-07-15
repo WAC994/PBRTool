@@ -29,6 +29,7 @@ namespace pt
         void loadASSIMPMesh(const aiMesh* mesh, uint32_t materialid);
         void draw();
     private:
+        void setupMeshData(); 
         void setupVertexArray();
     public:
         std::vector<Vertex> vertices;

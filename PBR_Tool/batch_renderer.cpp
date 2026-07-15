@@ -13,8 +13,8 @@ namespace pt
         std::vector<DEIC> drawCommandArray;
 
         static constexpr uint32_t meshCapacity = 1000;
-        static constexpr size_t drawCommandSize = meshCapacity * sizeof(DEIC);
-        static constexpr size_t modelMatricesSize = meshCapacity * sizeof(ModelMatrices);
+        static constexpr size_t drawCommandCapacitySize = meshCapacity * sizeof(DEIC);
+        static constexpr size_t modelMatricesCapacitySize = meshCapacity * sizeof(ModelMatrices);
 
         static constexpr size_t vertexCapacity = 1000000;
         static constexpr size_t vertexCapacitySize = vertexCapacity * sizeof(Vertex); // 48 Mega-Bytes
@@ -24,15 +24,28 @@ namespace pt
 
         size_t vertexOffset = 0;
         size_t indexOffset = 0;
+        uint32_t drawIndex = 0;
 
         GLuint vertexArray;
+
         GLuint vertexBuffer;
+        GLvoid* vertexBufferPointer;
+
         GLuint indexBuffer;
+        GLvoid* indexBufferPointer;
+
         GLuint drawCommandBuffer;
+        GLvoid* drawCommandBufferPointer;
+
         GLuint modelMatricesBuffer;
+        GLvoid* modelMatricesBufferPointer;
+
+        GLbitfield bufferFlags = GL_MAP_WRITE_BIT | GL_MAP_PERSISTENT_BIT | GL_MAP_COHERENT_BIT;
 
         inline size_t vertexOffsetSize() { return vertexOffset * sizeof(Vertex); }
         inline size_t indexOffsetSize() { return indexOffset * sizeof(uint32_t); }
+        inline size_t drawCommandSize() { return drawCommandArray.size() * sizeof(DEIC); }
+        inline size_t modelMatricesSize() { return modelMatricesArray.size() * sizeof(ModelMatrices); }
 
         void init()
         {
@@ -43,17 +56,38 @@ namespace pt
             drawCommandBuffer = buffers[2];
             modelMatricesBuffer = buffers[3];
 
-            // Vertex buffer
-            glNamedBufferStorage(vertexBuffer, vertexCapacitySize, nullptr, GL_DYNAMIC_STORAGE_BIT);
+            if (App::getInstance().config.debug)
+            {
+                // Vertex buffer
+                glNamedBufferStorage(vertexBuffer, vertexCapacitySize, nullptr, GL_DYNAMIC_STORAGE_BIT);
 
-            // Index buffer
-            glNamedBufferStorage(indexBuffer, indexCapacitySize, nullptr, GL_DYNAMIC_STORAGE_BIT);
+                // Index buffer
+                glNamedBufferStorage(indexBuffer, indexCapacitySize, nullptr, GL_DYNAMIC_STORAGE_BIT);
 
-            // Draw Command buffer
-            glNamedBufferStorage(drawCommandBuffer, drawCommandSize, nullptr, GL_DYNAMIC_STORAGE_BIT);
+                // Draw Command buffer
+                glNamedBufferStorage(drawCommandBuffer, drawCommandCapacitySize, nullptr, GL_DYNAMIC_STORAGE_BIT);
 
-            // Model Matrices buffer
-            glNamedBufferStorage(modelMatricesBuffer, modelMatricesSize, nullptr, GL_DYNAMIC_STORAGE_BIT);
+                // Model Matrices buffer
+                glNamedBufferStorage(modelMatricesBuffer, modelMatricesCapacitySize, nullptr, GL_DYNAMIC_STORAGE_BIT);
+            }
+            else
+            {
+                // Vertex buffer
+                glNamedBufferStorage(vertexBuffer, vertexCapacitySize, nullptr, bufferFlags);
+                vertexBufferPointer = glMapNamedBufferRange(vertexBuffer, 0, vertexCapacitySize, bufferFlags);
+
+                // Index buffer
+                glNamedBufferStorage(indexBuffer, indexCapacitySize, nullptr, bufferFlags);
+                indexBufferPointer = glMapNamedBufferRange(indexBuffer, 0, indexCapacitySize, bufferFlags);
+
+                // Draw Command buffer
+                glNamedBufferStorage(drawCommandBuffer, drawCommandCapacitySize, nullptr, bufferFlags);
+                drawCommandBufferPointer = glMapNamedBufferRange(drawCommandBuffer, 0, drawCommandCapacitySize, bufferFlags);
+
+                // Model Matrices buffer
+                glNamedBufferStorage(modelMatricesBuffer, modelMatricesCapacitySize, nullptr, bufferFlags);
+                modelMatricesBufferPointer = glMapNamedBufferRange(modelMatricesBuffer, 0, modelMatricesCapacitySize, bufferFlags);
+            }
 
             // Vertex and Index buffer setup
             glCreateVertexArrays(1, &vertexArray);
@@ -95,16 +129,22 @@ namespace pt
 
         void getData(Model& model)
         {
-            glNamedBufferSubData(vertexBuffer, vertexOffsetSize(), model.mesh.vertexSize, model.mesh.vertices.data());
-            glNamedBufferSubData(indexBuffer, indexOffsetSize(), model.mesh.indexSize, model.mesh.indices.data());
+            if (App::getInstance().config.debug)
+            {
+                glNamedBufferSubData(vertexBuffer, vertexOffsetSize(), model.mesh.vertexSize, model.mesh.vertices.data());
+                glNamedBufferSubData(indexBuffer, indexOffsetSize(), model.mesh.indexSize, model.mesh.indices.data());
+            }
+            else
+            {
+                std::memcpy((Vertex*)vertexBufferPointer + vertexOffset, model.mesh.vertices.data(), model.mesh.vertexSize);
+                std::memcpy((uint32_t*)indexBufferPointer + indexOffset, model.mesh.indices.data(), model.mesh.indexSize);
+            }
 
-            drawCommandArray.emplace_back(
-                static_cast<uint32_t>(model.mesh.indexCount),
-                1,
-                static_cast<uint32_t>(indexOffset),
-                static_cast<int32_t>(vertexOffset),
-                static_cast<uint32_t>(drawCommandArray.size())
-            );
+            model.mesh.drawCommand.firstIndex = indexOffset;
+            model.mesh.drawCommand.basevertex = vertexOffset;
+            model.mesh.drawCommand.baseInstance = drawIndex;
+
+            drawCommandArray.emplace_back(model.mesh.drawCommand);
 
             modelMatricesArray.emplace_back(model.getMartices());
         }
@@ -125,17 +165,28 @@ namespace pt
 
             vertexOffset += model.mesh.vertexCount;
             indexOffset += model.mesh.indexCount;
+            drawIndex++;
         }
 
         void draw()
         {
-            glNamedBufferSubData(drawCommandBuffer, 0, sizeof(DEIC) * drawCommandArray.size(), drawCommandArray.data());
-            glNamedBufferSubData(modelMatricesBuffer, 0, sizeof(ModelMatrices) * modelMatricesArray.size(), modelMatricesArray.data());
+            if (App::getInstance().config.debug)
+            {
+                glNamedBufferSubData(drawCommandBuffer, 0, drawCommandSize(), drawCommandArray.data());
+                glNamedBufferSubData(modelMatricesBuffer, 0, modelMatricesSize(), modelMatricesArray.data());
+            }
+            else
+            {
+                memcpy((DEIC*)drawCommandBufferPointer, drawCommandArray.data(), drawCommandSize());
+                memcpy((ModelMatrices*)modelMatricesBufferPointer, modelMatricesArray.data(), modelMatricesSize());
+            }
+
             bindVertexArray(vertexArray);
             glMultiDrawElementsIndirect(GL_TRIANGLES, GL_UNSIGNED_INT, 0, drawCommandArray.size(), 0);
 
             vertexOffset = 0;
             indexOffset = 0;
+            drawIndex = 0;
 
             drawCommandArray.clear();
             modelMatricesArray.clear();

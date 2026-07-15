@@ -107,9 +107,14 @@ class MeshBatchedTexture : public Scene
         {
             BatchRenderer::batch(gravity_generator);
         }
-        
+
         BatchRenderer::batch(M870);
-        BatchRenderer::batch(headphone);
+
+        if (Input::keyReleased(GLFW_KEY_O))
+        {
+            BatchRenderer::batch(headphone);
+        }
+        
         BatchRenderer::draw();
 
         materials.update();
