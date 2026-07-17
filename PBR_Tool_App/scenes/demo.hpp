@@ -12,62 +12,6 @@
 
 using namespace pt;
 
-class ScreenTexture : public Scene
-{
-    Screen demo;
-    uint32_t logo = gen2DTextureFromFile("assets/images/w.png", GL_SRGB8);
-    void onRender() override
-    {
-        demo.draw(logo);
-    }
-};
-
-class ScreenColor : public Scene
-{
-    Screen demo;
-    Shader color = Shader("assets/shaders/screen.vert", "assets/shaders/color.frag", SHADERFILEINFO::TEXTFILE);
-    void onRender() override
-    {
-        color.use();
-        demo.draw();
-    }
-};
-
-class MeshColor : public Scene
-{
-    Camera camera;
-    Mesh demo = Mesh("assets/models/headphone/headphone.gltf", 0);
-    Shader color = Shader("assets/shaders/mesh.vert", "assets/shaders/color.frag", SHADERFILEINFO::TEXTFILE);
-    void onStart() override
-    {
-        camera.update();
-    }
-
-    void onRender() override
-    {
-        color.use();
-        demo.draw();
-    }
-};
-
-class MeshTexture : public Scene
-{
-    Camera camera;
-    Mesh demo = Mesh("assets/models/headphone/headphone.gltf", 0);
-    Shader shader = Shader("assets/shaders/mesh.vert", "assets/shaders/texture.frag", SHADERFILEINFO::TEXTFILE);
-    uint32_t texture = gen2DTextureFromFile("assets/models/headphone/Headphones_1001_baseColor.jpg");
-    void onStart() override
-    {
-        camera.update();
-    }
-
-    void onRender() override
-    {
-        shader.bindTexture(0, texture);
-        demo.draw();
-    }
-};
-
 class MeshBatchedTexture : public Scene
 {
     Camera camera;
@@ -80,7 +24,6 @@ class MeshBatchedTexture : public Scene
 
     void onStart() override
     {
-        camera.update();
         BatchRenderer::init();
     }
 
@@ -103,20 +46,10 @@ class MeshBatchedTexture : public Scene
     void onRender() override
     {
         shader.use();
-        if (Input::keyPressed(GLFW_KEY_U))
-        {
-            BatchRenderer::batch(gravity_generator);
-        }
-
+        BatchRenderer::batch(gravity_generator);
         BatchRenderer::batch(M870);
-
-        if (Input::keyReleased(GLFW_KEY_O))
-        {
-            BatchRenderer::batch(headphone);
-        }
-        
+        BatchRenderer::batch(headphone);
         BatchRenderer::draw();
-
         materials.update();
     }
 };

@@ -35,6 +35,7 @@ namespace pt
         std::vector<Vertex> vertices;
         std::vector<uint32_t> indices;
         DEIC drawCommand;
+        bool batched = false;
         size_t vertexCount = 0, vertexSize = 0, indexCount = 0, indexSize = 0;
     private:
         GLuint m_vArray, m_vBuffer, m_iBuffer;

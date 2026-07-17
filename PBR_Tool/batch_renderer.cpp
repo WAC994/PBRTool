@@ -11,6 +11,7 @@ namespace pt
     {
         std::vector<ModelMatrices> modelMatricesArray;
         std::vector<DEIC> drawCommandArray;
+        std::unordered_map <Model*, bool> batchTracker;
 
         static constexpr uint32_t meshCapacity = 1000;
         static constexpr size_t drawCommandCapacitySize = meshCapacity * sizeof(DEIC);
@@ -27,20 +28,10 @@ namespace pt
         uint32_t drawIndex = 0;
 
         GLuint vertexArray;
-
         GLuint vertexBuffer;
-        GLvoid* vertexBufferPointer;
-
         GLuint indexBuffer;
-        GLvoid* indexBufferPointer;
-
         GLuint drawCommandBuffer;
-        GLvoid* drawCommandBufferPointer;
-
         GLuint modelMatricesBuffer;
-        GLvoid* modelMatricesBufferPointer;
-
-        GLbitfield bufferFlags = GL_MAP_WRITE_BIT | GL_MAP_PERSISTENT_BIT | GL_MAP_COHERENT_BIT;
 
         inline size_t vertexOffsetSize() { return vertexOffset * sizeof(Vertex); }
         inline size_t indexOffsetSize() { return indexOffset * sizeof(uint32_t); }
@@ -56,38 +47,17 @@ namespace pt
             drawCommandBuffer = buffers[2];
             modelMatricesBuffer = buffers[3];
 
-            if (App::getInstance().config.debug)
-            {
-                // Vertex buffer
-                glNamedBufferStorage(vertexBuffer, vertexCapacitySize, nullptr, GL_DYNAMIC_STORAGE_BIT);
+            // Vertex buffer
+            glNamedBufferStorage(vertexBuffer, vertexCapacitySize, nullptr, GL_DYNAMIC_STORAGE_BIT);
 
-                // Index buffer
-                glNamedBufferStorage(indexBuffer, indexCapacitySize, nullptr, GL_DYNAMIC_STORAGE_BIT);
+            // Index buffer
+            glNamedBufferStorage(indexBuffer, indexCapacitySize, nullptr, GL_DYNAMIC_STORAGE_BIT);
 
-                // Draw Command buffer
-                glNamedBufferStorage(drawCommandBuffer, drawCommandCapacitySize, nullptr, GL_DYNAMIC_STORAGE_BIT);
+            // Draw Command buffer
+            glNamedBufferStorage(drawCommandBuffer, drawCommandCapacitySize, nullptr, GL_DYNAMIC_STORAGE_BIT);
 
-                // Model Matrices buffer
-                glNamedBufferStorage(modelMatricesBuffer, modelMatricesCapacitySize, nullptr, GL_DYNAMIC_STORAGE_BIT);
-            }
-            else
-            {
-                // Vertex buffer
-                glNamedBufferStorage(vertexBuffer, vertexCapacitySize, nullptr, bufferFlags);
-                vertexBufferPointer = glMapNamedBufferRange(vertexBuffer, 0, vertexCapacitySize, bufferFlags);
-
-                // Index buffer
-                glNamedBufferStorage(indexBuffer, indexCapacitySize, nullptr, bufferFlags);
-                indexBufferPointer = glMapNamedBufferRange(indexBuffer, 0, indexCapacitySize, bufferFlags);
-
-                // Draw Command buffer
-                glNamedBufferStorage(drawCommandBuffer, drawCommandCapacitySize, nullptr, bufferFlags);
-                drawCommandBufferPointer = glMapNamedBufferRange(drawCommandBuffer, 0, drawCommandCapacitySize, bufferFlags);
-
-                // Model Matrices buffer
-                glNamedBufferStorage(modelMatricesBuffer, modelMatricesCapacitySize, nullptr, bufferFlags);
-                modelMatricesBufferPointer = glMapNamedBufferRange(modelMatricesBuffer, 0, modelMatricesCapacitySize, bufferFlags);
-            }
+            // Model Matrices buffer
+            glNamedBufferStorage(modelMatricesBuffer, modelMatricesCapacitySize, nullptr, GL_DYNAMIC_STORAGE_BIT);
 
             // Vertex and Index buffer setup
             glCreateVertexArrays(1, &vertexArray);
@@ -127,22 +97,25 @@ namespace pt
             glBindBufferBase(GL_SHADER_STORAGE_BUFFER, TRANSFORM_SSBO_BINDING_POINT, modelMatricesBuffer);
         }
 
+        bool drawCommandChanged(Model& model)
+        {
+            return (
+                model.mesh.drawCommand.firstIndex != indexOffset |
+                model.mesh.drawCommand.basevertex != vertexOffset |
+                model.mesh.drawCommand.baseInstance != drawIndex
+                );
+        }
+
         void getData(Model& model)
         {
-            if (App::getInstance().config.debug)
+            if (drawCommandChanged(model) || !model.mesh.batched)
             {
                 glNamedBufferSubData(vertexBuffer, vertexOffsetSize(), model.mesh.vertexSize, model.mesh.vertices.data());
                 glNamedBufferSubData(indexBuffer, indexOffsetSize(), model.mesh.indexSize, model.mesh.indices.data());
+                model.mesh.drawCommand.firstIndex = indexOffset;
+                model.mesh.drawCommand.basevertex = vertexOffset;
+                model.mesh.drawCommand.baseInstance = drawIndex;
             }
-            else
-            {
-                std::memcpy((Vertex*)vertexBufferPointer + vertexOffset, model.mesh.vertices.data(), model.mesh.vertexSize);
-                std::memcpy((uint32_t*)indexBufferPointer + indexOffset, model.mesh.indices.data(), model.mesh.indexSize);
-            }
-
-            model.mesh.drawCommand.firstIndex = indexOffset;
-            model.mesh.drawCommand.basevertex = vertexOffset;
-            model.mesh.drawCommand.baseInstance = drawIndex;
 
             drawCommandArray.emplace_back(model.mesh.drawCommand);
 
@@ -165,22 +138,23 @@ namespace pt
 
             vertexOffset += model.mesh.vertexCount;
             indexOffset += model.mesh.indexCount;
+
+            model.mesh.batched = true;
+            batchTracker[&model] = model.mesh.batched;
+
             drawIndex++;
         }
 
         void draw()
         {
-            if (App::getInstance().config.debug)
+            for (auto& model : batchTracker)
             {
-                glNamedBufferSubData(drawCommandBuffer, 0, drawCommandSize(), drawCommandArray.data());
-                glNamedBufferSubData(modelMatricesBuffer, 0, modelMatricesSize(), modelMatricesArray.data());
-            }
-            else
-            {
-                memcpy((DEIC*)drawCommandBufferPointer, drawCommandArray.data(), drawCommandSize());
-                memcpy((ModelMatrices*)modelMatricesBufferPointer, modelMatricesArray.data(), modelMatricesSize());
+                if (model.first)
+                    model.first->mesh.batched = model.first->mesh.batched && batchTracker[model.first];
             }
 
+            glNamedBufferSubData(drawCommandBuffer, 0, drawCommandSize(), drawCommandArray.data());
+            glNamedBufferSubData(modelMatricesBuffer, 0, modelMatricesSize(), modelMatricesArray.data());
             bindVertexArray(vertexArray);
             glMultiDrawElementsIndirect(GL_TRIANGLES, GL_UNSIGNED_INT, 0, drawCommandArray.size(), 0);
 
@@ -188,6 +162,10 @@ namespace pt
             indexOffset = 0;
             drawIndex = 0;
 
+            for (auto& model : batchTracker)
+            {
+                model.second = false;
+            }
             drawCommandArray.clear();
             modelMatricesArray.clear();
         }
