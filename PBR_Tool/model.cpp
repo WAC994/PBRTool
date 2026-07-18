@@ -32,21 +32,33 @@ namespace pt
 
             // Base color
             if (aimaterial->GetTexture(aiTextureType_BASE_COLOR, 0, &texturFileName) == AI_SUCCESS)
+            {
                 material.colorTex = genBindless2DTextureFromFile(m_directory + texturFileName.C_Str());
+                // glMakeTextureHandleResidentARB(material.colorTex);
+            }
 
             // ORMS
             if (aimaterial->GetTexture(aiTextureType_GLTF_METALLIC_ROUGHNESS, 0, &texturFileName) == AI_SUCCESS)
+            {
                 material.ormsTex = genBindless2DTextureFromFile(m_directory + texturFileName.C_Str());
-
+                // glMakeTextureHandleResidentARB(material.ormsTex);
+            }
+            
             // Normal
             if (aimaterial->GetTexture(aiTextureType_NORMALS, 0, &texturFileName) == AI_SUCCESS)
+            {
                 material.normalTex = genBindless2DTextureFromFile(m_directory + texturFileName.C_Str());
+                // glMakeTextureHandleResidentARB(material.normalTex);
+            }
 
             // Emission
             if (aimaterial->GetTexture(aiTextureType_EMISSIVE, 0, &texturFileName) == AI_SUCCESS)
+            {
                 material.emissionTex = genBindless2DTextureFromFile(m_directory + texturFileName.C_Str());
+                // glMakeTextureHandleResidentARB(material.emissionTex);
+            }
         }
-        
+
         s_materialIDOffset += materialCount;
     }
 

@@ -21,7 +21,7 @@ namespace pt
         static constexpr size_t vertexCapacitySize = vertexCapacity * sizeof(Vertex); // 48 Mega-Bytes
 
         static constexpr size_t indexCapacity = 6000000;
-        static constexpr size_t indexCapacitySize = indexCapacity * sizeof(uint32_t); // 12 Mega-Bytes
+        static constexpr size_t indexCapacitySize = indexCapacity * sizeof(uint32_t); // 24 Mega-Bytes
 
         size_t vertexOffset = 0;
         size_t indexOffset = 0;
@@ -100,8 +100,8 @@ namespace pt
         bool drawCommandChanged(Model& model)
         {
             return (
-                model.mesh.drawCommand.firstIndex != indexOffset |
-                model.mesh.drawCommand.basevertex != vertexOffset |
+                model.mesh.drawCommand.firstIndex != indexOffset ||
+                model.mesh.drawCommand.basevertex != vertexOffset ||
                 model.mesh.drawCommand.baseInstance != drawIndex
                 );
         }
@@ -120,6 +120,9 @@ namespace pt
             drawCommandArray.emplace_back(model.mesh.drawCommand);
 
             modelMatricesArray.emplace_back(model.getMartices());
+
+            vertexOffset += model.mesh.vertexCount;
+            indexOffset += model.mesh.indexCount;
         }
 
         void batch(Model& model)
@@ -127,7 +130,7 @@ namespace pt
             size_t vertexTotal = vertexOffset + model.mesh.vertexCount;
             size_t indexTotal = indexOffset + model.mesh.indexCount;
 
-            if ((vertexTotal > vertexCapacity) || (indexTotal > indexCapacity))
+            if ((vertexTotal > vertexCapacity) || (indexTotal > indexCapacity) || drawIndex >= meshCapacity)
             {
                 draw();
                 batch(model);
@@ -135,9 +138,6 @@ namespace pt
             }
 
             getData(model);
-
-            vertexOffset += model.mesh.vertexCount;
-            indexOffset += model.mesh.indexCount;
 
             model.mesh.batched = true;
             batchTracker[&model] = model.mesh.batched;
@@ -150,7 +150,7 @@ namespace pt
             for (auto& model : batchTracker)
             {
                 if (model.first)
-                    model.first->mesh.batched = model.first->mesh.batched && batchTracker[model.first];
+                    model.first->mesh.batched = model.first->mesh.batched && model.second;
             }
 
             glNamedBufferSubData(drawCommandBuffer, 0, drawCommandSize(), drawCommandArray.data());
@@ -164,8 +164,10 @@ namespace pt
 
             for (auto& model : batchTracker)
             {
-                model.second = false;
+                if (model.first)
+                    model.second = false;
             }
+
             drawCommandArray.clear();
             modelMatricesArray.clear();
         }

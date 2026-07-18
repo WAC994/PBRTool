@@ -15,6 +15,7 @@ namespace pt
         GLuint64 normalTex;
         GLuint64 emissionTex;
     };
+    
     class MaterialManager
     {
     public:

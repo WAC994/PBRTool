@@ -46,10 +46,16 @@ class MeshBatchedTexture : public Scene
     void onRender() override
     {
         shader.use();
-        BatchRenderer::batch(gravity_generator);
+        if (Input::keyPressed(GLFW_KEY_L))
+            BatchRenderer::batch(gravity_generator);
         BatchRenderer::batch(M870);
-        BatchRenderer::batch(headphone);
+        if (Input::keyPressed(GLFW_KEY_K))
+            BatchRenderer::batch(headphone);
         BatchRenderer::draw();
+
+        // gravity_generator.draw();
+        // M870.draw();
+        // headphone.draw();
         materials.update();
     }
 };

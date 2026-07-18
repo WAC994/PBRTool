@@ -27,11 +27,8 @@ in VERTEX
 
 layout(location = 0) out vec4 f_color;
 
-layout(bindless_sampler) uniform sampler2D  u_texture;
-
 void main()
 {
-    uint material_id = uint(vertex.material);
-    f_color = texture(materials[material_id].color_tex, vertex.texcoord);
-    // f_color = vec4(1.0, 0.5 ,0.25, 1.0);
+    MaterialData material = materials[uint(vertex.material)];
+    f_color = texture(material.orms_tex, vertex.texcoord);
 }
