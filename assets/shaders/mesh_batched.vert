@@ -31,6 +31,7 @@ out VERTEX
 {
     vec3 position;
     vec3 normal;
+    vec3 view_dir;
     vec2 texcoord;
     float material;
     mat3 tbn_matrix;
@@ -42,7 +43,7 @@ void main()
     vec4 position = model.transformMatrix * vec4(a_position, 1.0);
     gl_Position = camera.perspective * camera.view * position;
     vertex.position = position.xyz;
-    vertex.texcoord = a_texcoord;
+    vertex.view_dir = normalize(camera.position - position.xyz);
 
     // Calculate normal, tangent, bitangent
     vertex.normal = normalize(mat3(model.normalMatrix) * a_normal);

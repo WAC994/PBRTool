@@ -21,7 +21,6 @@ namespace pt
 
     MaterialData& MaterialManager::getMaterial(uint32_t material)
     {
-        // std::cout << "Material " << material << " accessed\n";
         if (material < MAX_MATERIALS)
         {
             return s_materials[material];

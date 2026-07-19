@@ -8,7 +8,7 @@
 namespace pt
 {
     uint32_t Model::s_materialIDOffset = 0;
-    Model::Model(const std::filesystem::path& path) : m_directory(path.parent_path().string() + '/')
+    Model::Model(const std::filesystem::path& path, bool loadtextures) : m_directory(path.parent_path().string() + '/')
     {
         name = path.stem().string();
         Assimp::Importer importer;
@@ -30,35 +30,41 @@ namespace pt
             auto& material = MaterialManager::getMaterial(i + s_materialIDOffset);
             aiString texturFileName;
 
-            // Base color
-            if (aimaterial->GetTexture(aiTextureType_BASE_COLOR, 0, &texturFileName) == AI_SUCCESS)
+            if (loadtextures)
             {
-                material.colorTex = genBindless2DTextureFromFile(m_directory + texturFileName.C_Str());
-                // glMakeTextureHandleResidentARB(material.colorTex);
-            }
+                // Base color
+                if (aimaterial->GetTexture(aiTextureType_BASE_COLOR, 0, &texturFileName) == AI_SUCCESS)
+                {
+                    material.colorTex = genBindless2DTextureFromFile(m_directory + texturFileName.C_Str());
+                    material.texFlags |= TEX_FLAG::COLOR;
+                }
 
-            // ORMS
-            if (aimaterial->GetTexture(aiTextureType_GLTF_METALLIC_ROUGHNESS, 0, &texturFileName) == AI_SUCCESS)
-            {
-                material.ormsTex = genBindless2DTextureFromFile(m_directory + texturFileName.C_Str());
-                // glMakeTextureHandleResidentARB(material.ormsTex);
-            }
-            
-            // Normal
-            if (aimaterial->GetTexture(aiTextureType_NORMALS, 0, &texturFileName) == AI_SUCCESS)
-            {
-                material.normalTex = genBindless2DTextureFromFile(m_directory + texturFileName.C_Str());
-                // glMakeTextureHandleResidentARB(material.normalTex);
-            }
+                // ORMS
+                if (aimaterial->GetTexture(aiTextureType_GLTF_METALLIC_ROUGHNESS, 0, &texturFileName) == AI_SUCCESS)
+                {
+                    material.ormsTex = genBindless2DTextureFromFile(m_directory + texturFileName.C_Str());
+                    material.texFlags |= TEX_FLAG::ORMS;
+                }
 
-            // Emission
-            if (aimaterial->GetTexture(aiTextureType_EMISSIVE, 0, &texturFileName) == AI_SUCCESS)
+                // Normal
+                if (aimaterial->GetTexture(aiTextureType_NORMALS, 0, &texturFileName) == AI_SUCCESS)
+                {
+                    material.normalTex = genBindless2DTextureFromFile(m_directory + texturFileName.C_Str());
+                    material.texFlags |= TEX_FLAG::NORM;
+                }
+
+                // Emission
+                if (aimaterial->GetTexture(aiTextureType_EMISSIVE, 0, &texturFileName) == AI_SUCCESS)
+                {
+                    material.emissionTex = genBindless2DTextureFromFile(m_directory + texturFileName.C_Str());
+                    material.texFlags |= TEX_FLAG::EMIT;
+                }
+            }
+            else
             {
-                material.emissionTex = genBindless2DTextureFromFile(m_directory + texturFileName.C_Str());
-                // glMakeTextureHandleResidentARB(material.emissionTex);
+                material = {};
             }
         }
-
         s_materialIDOffset += materialCount;
     }
 

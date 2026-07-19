@@ -1,6 +1,7 @@
 #version 460 core
 
 const uint CAMERA_UBO_BINDING_POINT = 0;
+const uint TRANSFORM_UBO_BINDING_POINT = 3;
 
 layout(std140, binding = CAMERA_UBO_BINDING_POINT) uniform CameraData
 {
@@ -8,6 +9,12 @@ layout(std140, binding = CAMERA_UBO_BINDING_POINT) uniform CameraData
     mat4 view;
     vec3 position;
 }camera;
+
+layout(std140, binding = TRANSFORM_UBO_BINDING_POINT) uniform ModelMatrices
+{
+    mat4 transformMatrix;
+    mat4 normalMatrix;
+};
 
 layout(location = 0) in vec3 a_position;
 layout(location = 1) in vec3 a_normal;
@@ -19,6 +26,7 @@ out VERTEX
 {
     vec3 position;
     vec3 normal;
+    vec3 view_dir;
     vec2 texcoord;
     float material;
     mat3 tbn_matrix;
@@ -26,6 +34,8 @@ out VERTEX
 
 void main()
 {
-    gl_Position = camera.perspective * camera.view * vec4(a_position, 1.0);
+    vec4 position = transformMatrix * vec4(a_position, 1.0);
+    gl_Position = camera.perspective * camera.view * position;
     vertex.texcoord = a_texcoord;
+    vertex.view_dir = normalize(camera.position - position.xyz);
 }

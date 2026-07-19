@@ -11,7 +11,7 @@ namespace pt
   class Model : public Transform
   {
   public:
-    Model(const std::filesystem::path& path);
+    Model(const std::filesystem::path& path, bool loadtextures = true);
     void draw();
   public:
     Mesh mesh;
