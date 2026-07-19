@@ -61,7 +61,7 @@ inline void __stdcall openGLDebugCallback(GLenum source, GLenum type, GLuint id,
         break;
     }
 
-    if (severity == GL_DEBUG_SEVERITY_HIGH || severity == GL_DEBUG_SEVERITY_MEDIUM || severity == GL_DEBUG_SEVERITY_LOW)
+    if (severity == GL_DEBUG_SEVERITY_HIGH)
     {
         std::cerr << "Aborting due to OpenGL error\n";
         {

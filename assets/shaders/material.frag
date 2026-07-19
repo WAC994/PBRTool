@@ -33,8 +33,9 @@ in VERTEX
 {
     vec3 position;
     vec3 normal;
+    vec3 view_dir;
     vec2 texcoord;
-    flat float material;
+    float material;
     mat3 tbn_matrix;
 }vertex;
 

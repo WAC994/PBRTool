@@ -45,8 +45,8 @@ float useMaterial(uint textureflag, uint textureflags)
 }
 
 layout(location = 0) out vec4 g_color; // GL_SRGB8_ALPHA8
-layout(location = 2) out vec4 g_orms; // GL_RGBA16F
-layout(location = 1) out vec3 g_emission; // GL_R11F_G11F_B10F
+layout(location = 1) out vec4 g_orms; // GL_RGBA16F
+layout(location = 2) out vec3 g_emission; // GL_R11F_G11F_B10F
 layout(location = 3) out vec3 g_position; // GL_RGB16F
 layout(location = 4) out vec3 g_normal; // GL_RGB16F
 layout(location = 5) out vec3 g_view_dir; // GL_RGB16F

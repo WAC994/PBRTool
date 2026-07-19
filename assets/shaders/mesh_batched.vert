@@ -42,7 +42,9 @@ void main()
     ModelMatricesData model = models[gl_DrawID];
     vec4 position = model.transformMatrix * vec4(a_position, 1.0);
     gl_Position = camera.perspective * camera.view * position;
+
     vertex.position = position.xyz;
+    
     vertex.view_dir = normalize(camera.position - position.xyz);
 
     // Calculate normal, tangent, bitangent

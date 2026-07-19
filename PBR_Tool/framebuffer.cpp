@@ -1,4 +1,5 @@
 #include "framebuffer.hpp"
+#include <iostream>
 
 namespace pt
 {
@@ -37,11 +38,7 @@ namespace pt
     {
         for (uint32_t i = 0; i < count; ++i)
         {
-            if (attachment < MAX_FRAMEBUFFER_ATTACHMENTS)
-            {
-                glNamedFramebufferTexture(m_frameBuffer, attachment + i + GL_COLOR_ATTACHMENT0, textures[i], miplevel);
-                m_colorAttachmentCount++;
-            }
+            colorAttachment(textures[i], attachment + i, miplevel);
         }
     }
 

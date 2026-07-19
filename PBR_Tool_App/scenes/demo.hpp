@@ -9,22 +9,32 @@
 #include <batch_renderer.hpp>
 #include <inputs.hpp>
 #include <material.hpp>
+#include <framebuffer.hpp>
 
 using namespace pt;
 
-class MeshBatchedTexture : public Scene
+class PBRTest : public Scene
 {
+    Shader gBufferShader = Shader("assets/shaders/mesh_batched.vert", "assets/shaders/gbuffer.frag", SHADERFILEINFO::TEXTFILE);
+
     Camera camera;
+    MaterialManager materials;
+
+    FrameBuffer gBuffer;
+    std::array<uint32_t, MAX_G_BUFFER_TEXTURES> gBufferTextures = genGBufferTextures(App::getInstance().config.width, App::getInstance().config.height);
+    uint32_t gBufferDepth = genRenderTexture(App::getInstance().config.width, App::getInstance().config.height, GL_DEPTH_COMPONENT24);
+
+    Screen screen;
+
     Model headphone = Model("assets/models/headphone/headphone.gltf");
     Model M870 = Model("assets/models/M870/M870.gltf");
     Model gravity_generator = Model("assets/models/gravity-generator/gravity-generator.gltf");
-    Shader shader = Shader("assets/shaders/mesh_batched.vert", "assets/shaders/material.frag", SHADERFILEINFO::TEXTFILE);
-    uint64_t texture = genBindless2DTextureFromFile("assets/models/headphone/Headphones_1001_baseColor.jpg");
-    MaterialManager materials;
 
     void onStart() override
     {
         BatchRenderer::init();
+        gBuffer.colorAttachments(gBufferTextures.data(), 0, gBufferTextures.size(), 0);
+        gBuffer.depthAttachment(gBufferDepth, 0);
     }
 
     void onEvent(Event& event) override
@@ -45,17 +55,17 @@ class MeshBatchedTexture : public Scene
 
     void onRender() override
     {
-        shader.use();
-        if (Input::keyPressed(GLFW_KEY_L))
-            BatchRenderer::batch(gravity_generator);
+        gBuffer.bind();
+        glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+        gBufferShader.use();
+        BatchRenderer::batch(gravity_generator);
         BatchRenderer::batch(M870);
-        if (Input::keyPressed(GLFW_KEY_K))
-            BatchRenderer::batch(headphone);
+        BatchRenderer::batch(headphone);
         BatchRenderer::draw();
 
-        // gravity_generator.draw();
-        // M870.draw();
-        // headphone.draw();
+        FrameBuffer::bindDefault();
+        screen.draw(gBufferTextures.at(5));
+
         materials.update();
     }
 };

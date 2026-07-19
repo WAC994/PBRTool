@@ -4,6 +4,6 @@
 int main()
 {
     App& app = App::getInstance();
-    app.setScene<MeshBatchedTexture>();
+    app.setScene<PBRTest>();
     app.run();
 }

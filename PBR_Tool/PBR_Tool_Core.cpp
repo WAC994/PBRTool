@@ -37,16 +37,19 @@ namespace pt
 
         int flags;
         glGetIntegerv(GL_CONTEXT_FLAGS, &flags);
-        if (flags & GL_CONTEXT_FLAG_DEBUG_BIT)
+        if (config.debug)
         {
-            glEnable(GL_DEBUG_OUTPUT);
-            glEnable(GL_DEBUG_OUTPUT_SYNCHRONOUS);
-            glDebugMessageCallback(openGLDebugCallback, nullptr);
-            glDebugMessageControl(GL_DONT_CARE, GL_DONT_CARE, GL_DONT_CARE, 0, nullptr, GL_TRUE);
+            if (flags & GL_CONTEXT_FLAG_DEBUG_BIT)
+            {
+                glEnable(GL_DEBUG_OUTPUT);
+                glEnable(GL_DEBUG_OUTPUT_SYNCHRONOUS);
+                glDebugMessageCallback(openGLDebugCallback, nullptr);
+                glDebugMessageControl(GL_DONT_CARE, GL_DONT_CARE, GL_DONT_CARE, 0, nullptr, GL_TRUE);
+            }
         }
 
         config.GPURenderer = reinterpret_cast<const char*>(glGetString(GL_RENDERER));
-        
+
         eventCallbacks();
     }
 
@@ -146,7 +149,7 @@ namespace pt
             }
 
             glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-            
+
             if (m_scene)
                 m_scene->onRender();
 
