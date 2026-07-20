@@ -10,6 +10,7 @@
 #include <inputs.hpp>
 #include <material.hpp>
 #include <framebuffer.hpp>
+#include <lights.hpp>
 
 using namespace pt;
 
@@ -33,6 +34,7 @@ class PBRTest : public Scene
     void onStart() override
     {
         BatchRenderer::init();
+        LightManager::init();
         gBuffer.colorAttachments(gBufferTextures.data(), 0, gBufferTextures.size(), 0);
         gBuffer.depthAttachment(gBufferDepth, 0);
     }
@@ -64,8 +66,14 @@ class PBRTest : public Scene
         BatchRenderer::draw();
 
         FrameBuffer::bindDefault();
-        screen.draw(gBufferTextures.at(5));
+        screen.draw(gBufferTextures.at(0));
 
         materials.update();
+
+        Light red(glm::vec3(1.0f, 0.0f, 0.0f), glm::vec3(0.0f));
+        Light green(glm::vec3(0.0f, 1.0f, 0.0f), glm::vec3(0.0f));
+        Light blue(glm::vec3(0.0f, 0.0f, 1.0f), glm::vec3(0.0f));
+        Light yellow(glm::vec3(1.0f, 0.0f, 1.0f), glm::vec3(0.0f));
+        LightManager::update();
     }
 };
