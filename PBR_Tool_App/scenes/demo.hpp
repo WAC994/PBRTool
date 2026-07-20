@@ -17,6 +17,7 @@ using namespace pt;
 class PBRTest : public Scene
 {
     Shader gBufferShader = Shader("assets/shaders/mesh_batched.vert", "assets/shaders/gbuffer.frag", SHADERFILEINFO::TEXTFILE);
+    Shader lightingShader = Shader("assets/shaders/screen.vert", "assets/shaders/lighting_deferred.frag", SHADERFILEINFO::TEXTFILE);
 
     Camera camera;
     MaterialManager materials;
@@ -25,7 +26,10 @@ class PBRTest : public Scene
     std::array<uint32_t, MAX_G_BUFFER_TEXTURES> gBufferTextures = genGBufferTextures(App::getInstance().config.width, App::getInstance().config.height);
     uint32_t gBufferDepth = genRenderTexture(App::getInstance().config.width, App::getInstance().config.height, GL_DEPTH_COMPONENT24);
 
-    Screen screen;
+    FrameBuffer colorBuffer;
+    uint32_t colorRenderTarget =  genRenderTexture(App::getInstance().config.width, App::getInstance().config.height, GL_R11F_G11F_B10F);
+
+    Screen screen, screen2;
 
     Model headphone = Model("assets/models/headphone/headphone.gltf");
     Model M870 = Model("assets/models/M870/M870.gltf");
@@ -37,6 +41,7 @@ class PBRTest : public Scene
         LightManager::init();
         gBuffer.colorAttachments(gBufferTextures.data(), 0, gBufferTextures.size(), 0);
         gBuffer.depthAttachment(gBufferDepth, 0);
+        colorBuffer.colorAttachment(colorRenderTarget, 0, 0);
     }
 
     void onEvent(Event& event) override
@@ -57,23 +62,29 @@ class PBRTest : public Scene
 
     void onRender() override
     {
+        // G Buffer pass
         gBuffer.bind();
-        glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
         gBufferShader.use();
         BatchRenderer::batch(gravity_generator);
-        BatchRenderer::batch(M870);
-        BatchRenderer::batch(headphone);
+        // BatchRenderer::batch(M870);
+        // BatchRenderer::batch(headphone);
         BatchRenderer::draw();
 
+        // Lighting pass
+        colorBuffer.bind();
+        lightingShader.bindTextures(0, 6, gBufferTextures.data());
+        screen.draw();
+
+        // Post-process pass
         FrameBuffer::bindDefault();
-        screen.draw(gBufferTextures.at(0));
+        screen2.draw(colorRenderTarget);
 
         materials.update();
 
         Light red(glm::vec3(1.0f, 0.0f, 0.0f), glm::vec3(0.0f));
         Light green(glm::vec3(0.0f, 1.0f, 0.0f), glm::vec3(0.0f));
         Light blue(glm::vec3(0.0f, 0.0f, 1.0f), glm::vec3(0.0f));
-        Light yellow(glm::vec3(1.0f, 0.0f, 1.0f), glm::vec3(0.0f));
+        Light yellow(glm::vec3(1.0f, 1.0f, 0.0f), glm::vec3(0.0f));
         LightManager::update();
     }
 };

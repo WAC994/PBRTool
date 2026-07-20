@@ -258,16 +258,10 @@ namespace pt
         glProgramUniformMatrix4fv(m_programID, getNamedUniformLocation(name), count, GL_FALSE, glm::value_ptr(value));
     }
 
-    static int32_t s_activeTextureUnitPair[2] = { -1, -1 };
     void Shader::bindTexture(uint32_t unit, uint32_t texture) const
     {
         use();
-        if ((unit != s_activeTextureUnitPair[0]) && (texture != s_activeTextureUnitPair[1]))
-        {
-            glBindTextureUnit(unit, texture);
-            s_activeTextureUnitPair[0] = unit;
-            s_activeTextureUnitPair[1] = texture;
-        }
+        glBindTextureUnit(unit, texture);
     }
 
     void Shader::bindTextures(uint32_t first, int32_t count, const uint32_t* textures) const
