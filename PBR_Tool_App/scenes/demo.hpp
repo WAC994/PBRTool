@@ -18,6 +18,7 @@ class PBRTest : public Scene
 {
     Shader gBufferShader = Shader("assets/shaders/mesh_batched.vert", "assets/shaders/gbuffer.frag", SHADERFILEINFO::TEXTFILE);
     Shader lightingShader = Shader("assets/shaders/screen.vert", "assets/shaders/lighting_deferred.frag", SHADERFILEINFO::TEXTFILE);
+    Shader postProcessShader = Shader("assets/shaders/screen.vert", "assets/shaders/post_process.frag", SHADERFILEINFO::TEXTFILE);
 
     Camera camera;
     MaterialManager materials;
@@ -77,14 +78,15 @@ class PBRTest : public Scene
 
         // Post-process pass
         FrameBuffer::bindDefault();
-        screen2.draw(colorRenderTarget);
+        postProcessShader.bindTexture(0, colorRenderTarget);
+        screen2.draw();
 
         materials.update();
 
-        Light red(glm::vec3(1.0f, 0.0f, 0.0f), glm::vec3(0.0f));
-        Light green(glm::vec3(0.0f, 1.0f, 0.0f), glm::vec3(0.0f));
-        Light blue(glm::vec3(0.0f, 0.0f, 1.0f), glm::vec3(0.0f));
-        Light yellow(glm::vec3(1.0f, 1.0f, 0.0f), glm::vec3(0.0f));
+        Light red(glm::vec3(100.0f, 0.0f, 0.0f), glm::vec3(-2.0f, 2.5f, -2.0f));
+        Light green(glm::vec3(0.0f, 100.0f, 0.0f), glm::vec3(2.0f, 2.5f, -2.0f));
+        Light blue(glm::vec3(0.0f, 0.0f, 100.0f), glm::vec3(2.0f, 2.5f, 2.0f));
+        Light yellow(glm::vec3(100.0f, 100.0f, 0.0f), glm::vec3(-2.0f, 2.5f, 2.0f));
         LightManager::update();
     }
 };
