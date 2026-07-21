@@ -8,7 +8,7 @@
 ## Features
 1. C++ 20 support
 2. Cross-Platform (*tested on Windows and Ubuntu*) 
-   > Uses GLFW as windowing library
+   > :memo: **Note:** Uses GLFW as windowing library
 4. Uses OpenGL 4.6 core and ARB_BindlessTextures extension
 5. Core-App system
 6. PBR material system based loosely on GLTF specification
@@ -22,9 +22,10 @@
 ## Build Instructions
 Normal build instructions for a CMake project
   - ```bash
+    # In the PBRTool directory
     cmake -S . -B build -DCMAKE_BUILD_TYPE=Release   # Or Debug, RelWithDebInfo
     ```
 ***
 ## Guide
 ### 1. Run the demo application  
-   In your IDE, select **"PBR_TOOL_App"** as the defualt target
+   In your IDE, select **"PBR_TOOL_App"** as the default target.
