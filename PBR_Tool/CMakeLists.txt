@@ -17,7 +17,8 @@ target_sources(PBR_Tool_Core PUBLIC pbr_tool_core.hpp
     event.hpp
     inputs.hpp
     material.hpp
-    lights.hpp)
+    lights.hpp
+    render_tools.hpp)
 
 target_sources(PBR_Tool_Core PRIVATE pbr_tool_core.cpp
     vendor/glad/src/gl.c
@@ -36,7 +37,8 @@ target_sources(PBR_Tool_Core PRIVATE pbr_tool_core.cpp
     model.cpp
     inputs.cpp
     material.cpp
-    lights.cpp)
+    lights.cpp
+    render_tools.cpp)
 
 target_include_directories(PBR_Tool_Core PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}
     ${CMAKE_CURRENT_SOURCE_DIR}/vendor/glad/include

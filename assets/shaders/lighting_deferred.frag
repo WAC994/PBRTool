@@ -95,7 +95,7 @@ vec3 point_lighting(LightData light, Surface surface)
     vec3 diffuse_constant = vec3(1.0) - fresnel;
     diffuse_constant *= 1.0 - surface.metallic;
 
-    return (diffuse_constant * diffuse + (fresnel * normal_distribution * geometery)) * radiance * ndotl;
+    return (diffuse_constant * diffuse + (fresnel * normal_distribution * geometery)) * radiance * ndotl * surface.occlusion;
 }
 
 layout(location = 0) out vec4 f_color;

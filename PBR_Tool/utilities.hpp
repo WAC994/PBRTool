@@ -1,6 +1,7 @@
 #pragma once
 #include <cstdint>
 #include <glad/gl.h>
+#include <glm/glm.hpp>
 
 struct DrawElementsIndirectCommand
 {
@@ -23,6 +24,7 @@ namespace pt
     void bindVertexArray(GLuint vArray);
     void bindFramebuffer(GLuint framebuffer);
     void setViewPort(GLint width, GLint height);
+    void setMeshTransform(const glm::mat4& transform = glm::mat4(1.0));
 
     // Shader buffer binding points
     static constexpr uint32_t CAMERA_UBO_BINDING_POINT = 0;

@@ -11,6 +11,7 @@
 #include <material.hpp>
 #include <framebuffer.hpp>
 #include <lights.hpp>
+#include <render_tools.hpp>
 
 using namespace pt;
 
@@ -18,7 +19,7 @@ class PBRTest : public Scene
 {
     Shader gBufferShader = Shader("assets/shaders/mesh_batched.vert", "assets/shaders/gbuffer.frag", SHADERFILEINFO::TEXTFILE);
     Shader lightingShader = Shader("assets/shaders/screen.vert", "assets/shaders/lighting_deferred.frag", SHADERFILEINFO::TEXTFILE);
-    Shader postProcessShader = Shader("assets/shaders/screen.vert", "assets/shaders/post_process.frag", SHADERFILEINFO::TEXTFILE);
+    Shader colorShader = Shader("assets/shaders/screen.vert", "assets/shaders/post_process.frag", SHADERFILEINFO::TEXTFILE);
 
     Camera camera;
     MaterialManager materials;
@@ -27,10 +28,10 @@ class PBRTest : public Scene
     std::array<uint32_t, MAX_G_BUFFER_TEXTURES> gBufferTextures = genGBufferTextures(App::getInstance().config.width, App::getInstance().config.height);
     uint32_t gBufferDepth = genRenderTexture(App::getInstance().config.width, App::getInstance().config.height, GL_DEPTH_COMPONENT24);
 
-    FrameBuffer colorBuffer;
-    uint32_t colorRenderTarget =  genRenderTexture(App::getInstance().config.width, App::getInstance().config.height, GL_R11F_G11F_B10F);
+    FrameBuffer deferredBuffer;
+    uint32_t deferredTarget =  genRenderTexture(App::getInstance().config.width, App::getInstance().config.height, GL_R11F_G11F_B10F);
 
-    Screen screen, screen2;
+    Screen screen;
 
     Model headphone = Model("assets/models/headphone/headphone.gltf");
     Model M870 = Model("assets/models/M870/M870.gltf");
@@ -42,7 +43,7 @@ class PBRTest : public Scene
         LightManager::init();
         gBuffer.colorAttachments(gBufferTextures.data(), 0, gBufferTextures.size(), 0);
         gBuffer.depthAttachment(gBufferDepth, 0);
-        colorBuffer.colorAttachment(colorRenderTarget, 0, 0);
+        deferredBuffer.colorAttachment(deferredTarget, 0, 0);
     }
 
     void onEvent(Event& event) override
@@ -63,30 +64,64 @@ class PBRTest : public Scene
 
     void onRender() override
     {
+        /* Deferred Rendering */
         // G Buffer pass
         gBuffer.bind();
         gBufferShader.use();
-        BatchRenderer::batch(gravity_generator);
+        // BatchRenderer::batch(gravity_generator);
         // BatchRenderer::batch(M870);
-        // BatchRenderer::batch(headphone);
+        BatchRenderer::batch(headphone);
         BatchRenderer::draw();
 
         // Lighting pass
-        colorBuffer.bind();
+        deferredBuffer.bind();
         lightingShader.bindTextures(0, 6, gBufferTextures.data());
         screen.draw();
 
+        // Blit Deferred Renders depth with Forward Depth
+
+        /* Forward Rendering */
+
         // Post-process pass
         FrameBuffer::bindDefault();
-        postProcessShader.bindTexture(0, colorRenderTarget);
-        screen2.draw();
+        colorShader.bindTexture(0, deferredTarget);
+        screen.draw();
 
         materials.update();
 
-        Light red(glm::vec3(100.0f, 0.0f, 0.0f), glm::vec3(-2.0f, 2.5f, -2.0f));
-        Light green(glm::vec3(0.0f, 100.0f, 0.0f), glm::vec3(2.0f, 2.5f, -2.0f));
-        Light blue(glm::vec3(0.0f, 0.0f, 100.0f), glm::vec3(2.0f, 2.5f, 2.0f));
-        Light yellow(glm::vec3(100.0f, 100.0f, 0.0f), glm::vec3(-2.0f, 2.5f, 2.0f));
+        Light bulb1(glm::vec3(200.0f, 200.0f, 180.0f), glm::vec3(2.0f, 2.5f, 2.0f));
+        Light bulb2(glm::vec3(50.0f, 10.0f, 0.0f), glm::vec3(-2.0f, 0.0f, -2.0f));
         LightManager::update();
+    }
+};
+
+class CubeTest : public Scene
+{
+    Shader colorShader = Shader("assets/shaders/mesh.vert", "assets/shaders/color.frag", SHADERFILEINFO::TEXTFILE);
+    Camera camera;
+
+    void onStart() override
+    {
+    }
+
+    void onEvent(Event& event) override
+    {
+        EventManager eventManager(event);
+
+        eventManager.dispatch<MousePositionEvent>([this](MousePositionEvent& e)
+            {
+                camera.rotate(e.dx, e.dy);
+            });
+    }
+
+    void onUpdate(float deltaTime) override
+    {
+        camera.move(Input::axis2D(), deltaTime);
+    }
+
+    void onRender() override
+    {
+        colorShader.use();
+        drawCube();
     }
 };
