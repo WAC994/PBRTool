@@ -44,6 +44,14 @@ float useMaterial(uint textureflag, uint textureflags)
     return clamp(float(textureflag & textureflags), 0.0, 1.0);
 }
 
+vec4 linear_to_sRGB(vec4 color)
+{
+    vec3 lowValue = color.rgb * 12.92;
+    precise vec3 highValue = fma(vec3(1.055), pow(color.rgb, vec3(0.41666)), vec3(-0.055));
+    color.rgb = mix(lowValue, highValue, greaterThan(color.rgb, vec3(0.0031308)));
+    return color;
+}
+
 layout(location = 0) out vec4 g_color; // GL_SRGB8_ALPHA8
 layout(location = 1) out vec4 g_orms; // GL_RGBA16F
 layout(location = 2) out vec3 g_emission; // GL_R11F_G11F_B10F
@@ -55,11 +63,11 @@ void main()
 {
     MaterialData mat = materials[uint(vertex.material)];
 
-    g_color = mix(mat.color,
+    g_color = mix(linear_to_sRGB(mat.color),
         texture(mat.color_tex, vertex.texcoord),
         useMaterial(COLOR_FLAG, mat.tex_flags));
 
-    g_emission = mix(mat.emission.rgb * mat.emission.a,
+    g_emission = mix(linear_to_sRGB(mat.emission).rgb * mat.emission.a,
         texture(mat.emission_tex, vertex.texcoord).rgb * mat.emission.a,
         useMaterial(EMIT_FLAG, mat.tex_flags));
 

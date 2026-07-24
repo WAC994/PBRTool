@@ -1,8 +1,9 @@
 #pragma once
-#include <glm/glm.hpp>
-#include <vector>
-#include "utilities.hpp"
 #include <filesystem>
+#include <vector>
+#include <utility>
+#include <glm/glm.hpp>
+#include "utilities.hpp"
 
 // Forward declare aiScene and aiMesh
 struct aiScene;
@@ -12,6 +13,11 @@ namespace pt
 {
     struct Vertex
     {
+        Vertex() = default;
+        Vertex(const glm::vec3& pos, const glm::vec3& nor, const glm::vec3& tan, const glm::vec2& tex, float mat)
+            : position(pos), normal(nor), tangent(tan), texCoord(tex), material(mat)
+        {
+        }
         glm::vec3 position;
         glm::vec3 normal;
         glm::vec3 tangent;
@@ -19,17 +25,23 @@ namespace pt
         float material;
     };
 
+    struct MaterialPair
+    {
+        uint32_t index;
+        uint32_t id;
+    };
+
     class Mesh
     {
     public:
         Mesh() = default;
-        Mesh(const std::filesystem::path& path, uint32_t materialid);
+        Mesh(const std::filesystem::path& path);
         ~Mesh();
-        void loadASSIMPModel(const aiScene* model, uint32_t materialid);
-        void loadASSIMPMesh(const aiMesh* mesh, uint32_t materialid);
+        void loadASSIMPModel(const aiScene* model);
         void draw();
+        const std::vector<MaterialPair>& getMaterialPairs();
     private:
-        void setupMeshData(); 
+        void setupMeshData();
         void setupVertexArray();
     public:
         std::vector<Vertex> vertices;
@@ -40,5 +52,7 @@ namespace pt
     private:
         GLuint m_vArray, m_vBuffer, m_iBuffer;
         bool m_vertexArrayIsSet = false;
+        // Material Indices from importer
+        std::vector<MaterialPair> m_materialIDIndexPairs;
     };
 }

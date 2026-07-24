@@ -39,6 +39,7 @@ namespace pt
     void use() const;
 
     void setInt(int32_t loc, int32_t v0) const;
+    void setBool(int32_t loc, bool value) const;
     void setUint(int32_t loc, uint32_t v0) const;
     void setFloat(int32_t loc, float v0) const;
     void setFloat2(int32_t loc, float v0, float v1) const;

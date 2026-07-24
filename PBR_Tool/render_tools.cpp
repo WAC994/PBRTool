@@ -4,7 +4,7 @@
 
 namespace pt
 {
-    static float cubeVertices[24] = {
+    static const float cubeVertices[24] = {
         // Positions
         -0.5f, -0.5f,  0.5f, // 0
          0.5f, -0.5f,  0.5f, // 1
@@ -16,7 +16,7 @@ namespace pt
          0.5f,  0.5f, -0.5f  // 7
     };
 
-    static uint32_t cubeIndices[36] = {
+    static const uint32_t cubeIndices[36] = {
         1, 4, 7, 1, 7, 2, // Right Face +X
         5, 0, 3, 5, 3, 6, // Left Face -X
         3, 2, 7, 3, 7, 6, // Top Face +Y
@@ -29,12 +29,12 @@ namespace pt
 
     static glm::mat4 captureViews[6] =
     {
-        glm::lookAt(glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(1.0f,  0.0f,  0.0f), glm::vec3(0.0f, -1.0f,  0.0f)),
+        glm::lookAt(glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3( 1.0f,  0.0f,  0.0f), glm::vec3(0.0f, -1.0f,  0.0f)),
         glm::lookAt(glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(-1.0f,  0.0f,  0.0f), glm::vec3(0.0f, -1.0f,  0.0f)),
-        glm::lookAt(glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(0.0f,  1.0f,  0.0f), glm::vec3(0.0f,  0.0f,  1.0f)),
-        glm::lookAt(glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(0.0f, -1.0f,  0.0f), glm::vec3(0.0f,  0.0f, -1.0f)),
-        glm::lookAt(glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(0.0f,  0.0f,  1.0f), glm::vec3(0.0f, -1.0f,  0.0f)),
-        glm::lookAt(glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(0.0f,  0.0f, -1.0f), glm::vec3(0.0f, -1.0f,  0.0f))
+        glm::lookAt(glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3( 0.0f,  1.0f,  0.0f), glm::vec3(0.0f,  0.0f,  1.0f)),
+        glm::lookAt(glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3( 0.0f, -1.0f,  0.0f), glm::vec3(0.0f,  0.0f, -1.0f)),
+        glm::lookAt(glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3( 0.0f,  0.0f,  1.0f), glm::vec3(0.0f, -1.0f,  0.0f)),
+        glm::lookAt(glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3( 0.0f,  0.0f, -1.0f), glm::vec3(0.0f, -1.0f,  0.0f))
     };
 
     uint32_t cubeMapRender(uint32_t resolution)
@@ -55,7 +55,7 @@ namespace pt
         // Vertices
         glNamedBufferData(cubeVB, sizeof(cubeVertices), cubeVertices, GL_STATIC_DRAW);
         glVertexArrayVertexBuffer(cubeVA, 0, cubeVB, 0, 3 * sizeof(float));
-        // Elements
+        // Indices
         glNamedBufferData(cubeIB, sizeof(cubeIndices), cubeIndices, GL_STATIC_DRAW);
         glVertexArrayElementBuffer(cubeVA, cubeIB);
 

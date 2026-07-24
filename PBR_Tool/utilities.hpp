@@ -29,13 +29,11 @@ namespace pt
     // Shader buffer binding points
     static constexpr uint32_t CAMERA_UBO_BINDING_POINT = 0;
     static constexpr uint32_t TRANSFORM_SSBO_BINDING_POINT = 1;
-    static constexpr uint32_t MATERIAL_SSBO_BINDING_POINT = 2;
     static constexpr uint32_t TRANSFORM_UBO_BINDING_POINT = 3;
     static constexpr uint32_t LIGHTS_SSBO_BINDING_POINT = 4;
 
     // Global array sizes
     static constexpr uint32_t MAX_FRAMEBUFFER_ATTACHMENTS = 32;
-    static constexpr uint32_t MAX_MATERIALS = 1024;
     static constexpr uint32_t MAX_G_BUFFER_TEXTURES = 6;
     static constexpr uint32_t MAX_LIGHTS = 128;
 

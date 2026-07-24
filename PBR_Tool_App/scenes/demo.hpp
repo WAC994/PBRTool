@@ -22,7 +22,6 @@ class PBRTest : public Scene
     Shader colorShader = Shader("assets/shaders/screen.vert", "assets/shaders/post_process.frag", SHADERFILEINFO::TEXTFILE);
 
     Camera camera;
-    MaterialManager materials;
 
     FrameBuffer gBuffer;
     std::array<uint32_t, MAX_G_BUFFER_TEXTURES> gBufferTextures = genGBufferTextures(App::getInstance().config.width, App::getInstance().config.height);
@@ -33,14 +32,17 @@ class PBRTest : public Scene
 
     Screen screen;
 
+    // Model sphere = Model("assets/models/sphere/sphere.gltf");
     Model headphone = Model("assets/models/headphone/headphone.gltf");
-    Model M870 = Model("assets/models/M870/M870.gltf");
-    Model gravity_generator = Model("assets/models/gravity-generator/gravity-generator.gltf");
+    // Model M870 = Model("assets/models/M870/M870.gltf");
+    // Model gravity_generator = Model("assets/models/gravity-generator/gravity-generator.gltf");
 
     void onStart() override
     {
         BatchRenderer::init();
         LightManager::init();
+        MaterialManager::init();
+
         gBuffer.colorAttachments(gBufferTextures.data(), 0, gBufferTextures.size(), 0);
         gBuffer.depthAttachment(gBufferDepth, 0);
         deferredBuffer.colorAttachment(deferredTarget, 0, 0);
@@ -59,7 +61,6 @@ class PBRTest : public Scene
     void onUpdate(float deltaTime) override
     {
         camera.move(Input::axis2D(), deltaTime);
-        headphone.translate(glm::vec3(Input::axis2D(AxisInput::ARROWS) * deltaTime, 0.0f));
     }
 
     void onRender() override
@@ -68,8 +69,6 @@ class PBRTest : public Scene
         // G Buffer pass
         gBuffer.bind();
         gBufferShader.use();
-        // BatchRenderer::batch(gravity_generator);
-        // BatchRenderer::batch(M870);
         BatchRenderer::batch(headphone);
         BatchRenderer::draw();
 
@@ -78,19 +77,15 @@ class PBRTest : public Scene
         lightingShader.bindTextures(0, 6, gBufferTextures.data());
         screen.draw();
 
-        // Blit Deferred Renders depth with Forward Depth
-
-        /* Forward Rendering */
-
         // Post-process pass
         FrameBuffer::bindDefault();
         colorShader.bindTexture(0, deferredTarget);
         screen.draw();
 
-        materials.update();
-
         Light bulb1(glm::vec3(200.0f, 200.0f, 180.0f), glm::vec3(2.0f, 2.5f, 2.0f));
         Light bulb2(glm::vec3(50.0f, 10.0f, 0.0f), glm::vec3(-2.0f, 0.0f, -2.0f));
+
+        MaterialManager::update();
         LightManager::update();
     }
 };

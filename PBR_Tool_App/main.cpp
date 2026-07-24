@@ -4,6 +4,6 @@
 int main()
 {
     App& app = App::getInstance();
-    app.setScene<CubeTest>();
+    app.setScene<PBRTest>();
     app.run();
 }

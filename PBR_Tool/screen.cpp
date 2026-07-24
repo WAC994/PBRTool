@@ -10,7 +10,7 @@ const float s_screenVertices[12] = {
     -1.0f, 3.0f, 0.0f, 2.0f   // 2
 };
 const char* s_screenVertShader =
-"#version 450 core\n"
+"#version 460 core\n"
 "/* IN */\n"
 "layout(location = 0) in vec2 a_position;\n"
 "layout(location = 1) in vec2 a_texCoord;\n"
@@ -22,7 +22,7 @@ const char* s_screenVertShader =
 "    v_texCoord = a_texCoord;\n"
 "}\0";
 const char* s_screenFragShader =
-"#version 450 core\n"
+"#version 460 core\n"
 "/* IN */\n"
 "layout(location = 0) in vec2 v_texCoord;\n"
 "/* OUT */\n"
@@ -41,7 +41,6 @@ const char* s_screenFragShader =
 "{\n"
 "   f_color = gammaCorrection(texture(u_texture, v_texCoord));\n"
 "}\0";
-
 
 namespace pt
 {

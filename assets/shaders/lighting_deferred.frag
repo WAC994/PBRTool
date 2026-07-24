@@ -43,7 +43,7 @@ struct Surface
 
 vec3 fresnel_schlick(vec3 f0, vec3 f90, float costheta)
 {
-    return f0 + (f90 - f0) * exp2((-5.55473 * costheta - 6.98316) * costheta);
+    return f0 + (f90 - f0) * exp2((-5.55473 * costheta - 6.98316) * costheta); // using approximation for pow(costheta, 5.0)
 }
 
 float trowbridge_reitz_ggx(float alpha2, float ndoth)
@@ -84,7 +84,7 @@ vec3 point_lighting(LightData light, Surface surface)
     float ldoth = max(dot(light_dir, halfway_dir), 0.0);
     float ndoth = max(dot(surface.normal, halfway_dir), 0.0);
 
-    vec3 diffuse = surface.albedo * DICE_Disney_diffuse(surface.ndotv, ndotl, ldoth, surface.roughness);
+    vec3 diffuse = surface.albedo * DICE_Disney_diffuse(surface.ndotv, ndotl, ldoth, surface.roughness) * INVPI;
 
     vec3 fresnel = fresnel_schlick(surface.f0, vec3(1.0), ldoth);
 

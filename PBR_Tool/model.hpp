@@ -1,9 +1,7 @@
 #pragma once
 #include "transform.hpp"
 #include <filesystem>
-#include <string>
 #include "mesh.hpp"
-#include <vector>
 #include "material.hpp"
 
 namespace pt
@@ -11,13 +9,13 @@ namespace pt
   class Model : public Transform
   {
   public:
-    Model(const std::filesystem::path& path, bool loadtextures = true);
+    Model(const std::filesystem::path& path, bool loadmaterials = true);
     void draw();
   public:
     Mesh mesh;
-    std::string name;
+    std::vector<uint32_t> materialIDs;
   private:
     std::string m_directory;
-    static uint32_t s_materialIDOffset;
+    uint32_t m_materialID;
   };
 }

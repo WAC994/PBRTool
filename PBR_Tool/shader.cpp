@@ -128,6 +128,11 @@ namespace pt
         glProgramUniform1i(m_programID, loc, v0);
     }
 
+    void Shader::setBool(int32_t loc, bool value) const
+    {
+        glProgramUniform1ui(m_programID, loc, static_cast<uint32_t>(value));
+    }
+
     void Shader::setUint(int32_t loc, uint32_t v0) const
     {
         glProgramUniform1ui(m_programID, loc, v0);
