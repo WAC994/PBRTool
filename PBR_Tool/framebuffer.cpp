@@ -43,7 +43,14 @@ namespace pt
         if (attachment < MAX_FRAMEBUFFER_ATTACHMENTS)
         {
             glNamedFramebufferTexture(m_frameBuffer, GL_COLOR_ATTACHMENT0 + attachment, texture, miplevel);
-            m_colorAttachmentCount++;
+
+            // If the attachment has been set before skip increasing the count
+            if (m_colorAttachmentCache[attachment] == false)
+            {
+                m_colorAttachmentCount++;
+                m_colorAttachmentCache[attachment] = true;
+            }
+
             m_drawBuffersSet = false;
         }
     }
@@ -53,6 +60,24 @@ namespace pt
         for (uint32_t i = 0; i < count; ++i)
         {
             colorAttachment(textures[i], attachment + i, miplevel);
+        }
+    }
+
+    void FrameBuffer::cubeMapAttachment(uint32_t cubemap, uint32_t attachment, uint32_t layer, uint32_t miplevel)
+    {
+        m_colorAttached = true;
+        if (attachment < MAX_FRAMEBUFFER_ATTACHMENTS)
+        {
+            glNamedFramebufferTextureLayer(m_frameBuffer, attachment, cubemap, miplevel, layer);
+
+            // If the attachment has been set before skip increasing the count
+            if (m_colorAttachmentCache[attachment] == false)
+            {
+                m_colorAttachmentCount++;
+                m_colorAttachmentCache[attachment] = true;
+            }
+
+            m_drawBuffersSet = false;
         }
     }
 
@@ -73,6 +98,11 @@ namespace pt
         m_depthAttached = true;
         m_stencilAttached = true;
         glNamedFramebufferTexture(m_frameBuffer, GL_DEPTH_STENCIL_ATTACHMENT, texture, mipLevel);
+    }
+
+    void FrameBuffer::blit(uint32_t drawbuffer, int32_t width, int32_t height, GLenum bitmask)
+    {
+        glBlitNamedFramebuffer(m_frameBuffer, drawbuffer, 0, 0, width, height, 0, 0, width, height, bitmask, GL_NEAREST);
     }
 
     void FrameBuffer::bindDefault()

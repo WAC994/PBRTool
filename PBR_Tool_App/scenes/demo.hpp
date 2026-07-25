@@ -4,11 +4,9 @@
 #include <texture.hpp>
 #include <shader.hpp>
 #include <camera.hpp>
-#include <mesh.hpp>
 #include <model.hpp>
 #include <batch_renderer.hpp>
 #include <inputs.hpp>
-#include <material.hpp>
 #include <framebuffer.hpp>
 #include <lights.hpp>
 #include <render_tools.hpp>
@@ -19,7 +17,7 @@ class PBRTest : public Scene
 {
     Shader gBufferShader = Shader("assets/shaders/mesh_batched.vert", "assets/shaders/gbuffer.frag", SHADERFILEINFO::TEXTFILE);
     Shader lightingShader = Shader("assets/shaders/screen.vert", "assets/shaders/lighting_deferred.frag", SHADERFILEINFO::TEXTFILE);
-    Shader colorShader = Shader("assets/shaders/screen.vert", "assets/shaders/post_process.frag", SHADERFILEINFO::TEXTFILE);
+    Shader postProcessShader = Shader("assets/shaders/screen.vert", "assets/shaders/post_process.frag", SHADERFILEINFO::TEXTFILE);
 
     Camera camera;
 
@@ -29,13 +27,11 @@ class PBRTest : public Scene
 
     FrameBuffer deferredBuffer;
     uint32_t deferredTarget =  genRenderTexture(App::getInstance().config.width, App::getInstance().config.height, GL_R11F_G11F_B10F);
+    uint32_t deferredDepth =  genRenderTexture(App::getInstance().config.width, App::getInstance().config.height, GL_DEPTH_COMPONENT24);
 
     Screen screen;
 
-    // Model sphere = Model("assets/models/sphere/sphere.gltf");
     Model headphone = Model("assets/models/headphone/headphone.gltf");
-    // Model M870 = Model("assets/models/M870/M870.gltf");
-    // Model gravity_generator = Model("assets/models/gravity-generator/gravity-generator.gltf");
 
     void onStart() override
     {
@@ -45,7 +41,9 @@ class PBRTest : public Scene
 
         gBuffer.colorAttachments(gBufferTextures.data(), 0, gBufferTextures.size(), 0);
         gBuffer.depthAttachment(gBufferDepth, 0);
+        
         deferredBuffer.colorAttachment(deferredTarget, 0, 0);
+        deferredBuffer.depthAttachment(deferredDepth, 0);
     }
 
     void onEvent(Event& event) override
@@ -61,11 +59,16 @@ class PBRTest : public Scene
     void onUpdate(float deltaTime) override
     {
         camera.move(Input::axis2D(), deltaTime);
+
+        Light bulb1(glm::vec3(200.0f, 200.0f, 180.0f), glm::vec3(2.0f, 2.5f, 2.0f));
+        Light bulb2(glm::vec3(50.0f, 10.0f, 0.0f), glm::vec3(-2.0f, 0.0f, -2.0f));
+
+        MaterialManager::update();
+        LightManager::update();
     }
 
     void onRender() override
     {
-        /* Deferred Rendering */
         // G Buffer pass
         gBuffer.bind();
         gBufferShader.use();
@@ -79,44 +82,7 @@ class PBRTest : public Scene
 
         // Post-process pass
         FrameBuffer::bindDefault();
-        colorShader.bindTexture(0, deferredTarget);
+        postProcessShader.bindTexture(0, deferredTarget);
         screen.draw();
-
-        Light bulb1(glm::vec3(200.0f, 200.0f, 180.0f), glm::vec3(2.0f, 2.5f, 2.0f));
-        Light bulb2(glm::vec3(50.0f, 10.0f, 0.0f), glm::vec3(-2.0f, 0.0f, -2.0f));
-
-        MaterialManager::update();
-        LightManager::update();
-    }
-};
-
-class CubeTest : public Scene
-{
-    Shader colorShader = Shader("assets/shaders/mesh.vert", "assets/shaders/color.frag", SHADERFILEINFO::TEXTFILE);
-    Camera camera;
-
-    void onStart() override
-    {
-    }
-
-    void onEvent(Event& event) override
-    {
-        EventManager eventManager(event);
-
-        eventManager.dispatch<MousePositionEvent>([this](MousePositionEvent& e)
-            {
-                camera.rotate(e.dx, e.dy);
-            });
-    }
-
-    void onUpdate(float deltaTime) override
-    {
-        camera.move(Input::axis2D(), deltaTime);
-    }
-
-    void onRender() override
-    {
-        colorShader.use();
-        drawCube();
     }
 };
