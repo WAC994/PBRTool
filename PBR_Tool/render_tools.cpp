@@ -1,6 +1,9 @@
 #include "render_tools.hpp"
 #include <glm/glm.hpp>
 #include <glm/gtc/matrix_transform.hpp>
+#include "framebuffer.hpp"
+#include "texture.hpp"
+#include "PBR_Tool_Core.hpp"
 
 namespace pt
 {
@@ -22,25 +25,10 @@ namespace pt
         3, 2, 7, 3, 7, 6, // Top Face +Y
         1, 0, 5, 1, 5, 4, // Bottom Face -Y
         0, 1, 2, 0, 2, 3, // Front Face +Z
-        4, 5, 6, 4, 6 ,7  // Back Face -Z
+        4, 5, 6, 4, 6, 7  // Back Face -Z
     };
 
-    static glm::mat4 captureProjection = glm::perspective(glm::radians(90.0f), 1.0f, 0.1f, 10.0f);
-
-    static glm::mat4 captureViews[6] =
-    {
-        glm::lookAt(glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3( 1.0f,  0.0f,  0.0f), glm::vec3(0.0f, -1.0f,  0.0f)),
-        glm::lookAt(glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(-1.0f,  0.0f,  0.0f), glm::vec3(0.0f, -1.0f,  0.0f)),
-        glm::lookAt(glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3( 0.0f,  1.0f,  0.0f), glm::vec3(0.0f,  0.0f,  1.0f)),
-        glm::lookAt(glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3( 0.0f, -1.0f,  0.0f), glm::vec3(0.0f,  0.0f, -1.0f)),
-        glm::lookAt(glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3( 0.0f,  0.0f,  1.0f), glm::vec3(0.0f, -1.0f,  0.0f)),
-        glm::lookAt(glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3( 0.0f,  0.0f, -1.0f), glm::vec3(0.0f, -1.0f,  0.0f))
-    };
-
-    uint32_t cubeMapRender(uint32_t resolution)
-    {
-        return 0;
-    }
+    
 
     static bool cubeCreated = false;
     GLuint cubeVA, cubeVB, cubeIB;
@@ -83,7 +71,7 @@ namespace pt
             glEnable(GL_CULL_FACE);
     }
 
-    void drawCubeSides(uint8_t face, bool flipfaces)
+    void drawCubeSide(uint8_t face, bool flipfaces)
     {
         if (!cubeCreated)
         {
@@ -94,11 +82,84 @@ namespace pt
 
         if (face >= 6)
             face = 6;
-        glBindVertexArray(cubeVA);
+        bindVertexArray(cubeVA);
         if (flipfaces)
             glDisable(GL_CULL_FACE);
         glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, reinterpret_cast<const void*>(face * 6 * sizeof(uint32_t)));
         if (flipfaces)
             glEnable(GL_CULL_FACE);
+    }
+
+    class CubeMapGenImpl
+    {
+    private:
+    uint32_t m_cubeProjBuffer;
+    bool m_isSetup = false;
+    glm::mat4 m_captureProjection = glm::perspective(glm::radians(90.0f), 1.0f, 0.1f, 10.0f);
+
+    glm::mat4 m_captureViews[6] =
+    {
+        glm::lookAt(glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3( 1.0f,  0.0f,  0.0f), glm::vec3(0.0f, -1.0f,  0.0f)),
+        glm::lookAt(glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(-1.0f,  0.0f,  0.0f), glm::vec3(0.0f, -1.0f,  0.0f)),
+        glm::lookAt(glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3( 0.0f,  1.0f,  0.0f), glm::vec3(0.0f,  0.0f,  1.0f)),
+        glm::lookAt(glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3( 0.0f, -1.0f,  0.0f), glm::vec3(0.0f,  0.0f, -1.0f)),
+        glm::lookAt(glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3( 0.0f,  0.0f,  1.0f), glm::vec3(0.0f, -1.0f,  0.0f)),
+        glm::lookAt(glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3( 0.0f,  0.0f, -1.0f), glm::vec3(0.0f, -1.0f,  0.0f))
+    };
+    public:
+        void setup()
+        {
+            if (!m_isSetup)
+            {
+                glCreateBuffers(1, &m_cubeProjBuffer);
+                glNamedBufferStorage(m_cubeProjBuffer, sizeof(glm::mat4) * 2, nullptr, GL_DYNAMIC_STORAGE_BIT);
+                glBindBufferBase(GL_UNIFORM_BUFFER, CUBE_SIDES_UBO_BINDING_POINT, m_cubeProjBuffer);
+                m_isSetup = true;
+            }
+        }
+        void updateProjection()
+        {
+            glNamedBufferSubData(m_cubeProjBuffer, 0, sizeof(glm::mat4), &m_captureProjection);
+        }
+        void updateView(uint32_t side)
+        {
+            glNamedBufferSubData(m_cubeProjBuffer, sizeof(glm::mat4), sizeof(glm::mat4), &m_captureViews[side]);
+        }
+        FrameBuffer framebuffer;
+    };
+    static CubeMapGenImpl cubeMapGenerator;
+
+    uint32_t renderToCubeMap(int resolution, uint32_t bitFormat, bool useMips, uint32_t mipMapNum)
+    {
+        uint32_t cubeMap = genCubeMapTexture(resolution, resolution, bitFormat, useMips, mipMapNum);
+        cubeMapGenerator.setup();
+
+        // Set the viewport to the resolution
+        glViewport(0, 0, resolution, resolution);
+        
+        // Update projection for capture
+        cubeMapGenerator.updateProjection();
+        
+        for (uint32_t i = 0; i < 6; i++)
+        {
+            // Upate view of each cube side
+            cubeMapGenerator.updateView(i);
+            
+            // Attach and bind the framebuffer cube map side to capture to
+            cubeMapGenerator.framebuffer.cubeMapAttachment(cubeMap, 0, i);
+            cubeMapGenerator.framebuffer.bind();
+            
+            // Draw Cube side
+            drawCubeSide(i, true);
+        }
+        
+        // Reset the viewport after capturing
+        glViewport(0, 0, App::getInstance().config.width, App::getInstance().config.height);
+
+        // Bind the defualt buffer so any onther glClear call doesnt affect the cube map
+        FrameBuffer::bindDefault();
+
+        // Return the filled cube map
+        return cubeMap;
     }
 }

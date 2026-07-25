@@ -66,7 +66,7 @@ namespace pt
 
             m_materialIDIndexPairs.push_back(matPair);
 
-            std::cout << std::format("Mesh: {}, mat index (ASSIMP): {}, mat id: {}\n", mesh->mName.C_Str(), matPair.index, matPair.id);
+            // std::cout << std::format("Mesh: {}, mat index (ASSIMP): {}, mat id: {}\n", mesh->mName.C_Str(), matPair.index, matPair.id);
         }
 
         setupMeshData();

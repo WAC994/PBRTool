@@ -1,10 +1,11 @@
 #pragma once
 #include "utilities.hpp"
+#include "shader.hpp"
 
 namespace pt
 {
-    uint32_t cubeMapRender(uint32_t resolution);
-
     void drawCube(bool flipfaces = false);
-    void drawCubeSides(uint8_t face, bool flipfaces = false);
+    void drawCubeSide(uint8_t face, bool flipfaces = false);
+    // Use a shader to generate faces of a cube map
+    uint32_t renderToCubeMap(int resolution, uint32_t bitFormat, bool useMips = false, uint32_t mipMapNum = 0);
 }

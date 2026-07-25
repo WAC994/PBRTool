@@ -119,6 +119,7 @@ namespace pt
     {
         glEnable(GL_CULL_FACE);
         glEnable(GL_DEPTH_TEST);
+        glEnable(GL_TEXTURE_CUBE_MAP_SEAMLESS);
 
         if (m_scene)
             m_scene->onStart();

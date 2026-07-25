@@ -31,6 +31,7 @@ namespace pt
     static constexpr uint32_t TRANSFORM_SSBO_BINDING_POINT = 1;
     static constexpr uint32_t TRANSFORM_UBO_BINDING_POINT = 3;
     static constexpr uint32_t LIGHTS_SSBO_BINDING_POINT = 4;
+    static constexpr uint32_t CUBE_SIDES_UBO_BINDING_POINT = 5;
 
     // Global array sizes
     static constexpr uint32_t MAX_FRAMEBUFFER_ATTACHMENTS = 32;

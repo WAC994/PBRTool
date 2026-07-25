@@ -49,9 +49,8 @@ namespace pt
             {
                 m_colorAttachmentCount++;
                 m_colorAttachmentCache[attachment] = true;
+                m_drawBuffersSet = false;
             }
-
-            m_drawBuffersSet = false;
         }
     }
 
@@ -68,16 +67,15 @@ namespace pt
         m_colorAttached = true;
         if (attachment < MAX_FRAMEBUFFER_ATTACHMENTS)
         {
-            glNamedFramebufferTextureLayer(m_frameBuffer, attachment, cubemap, miplevel, layer);
+            glNamedFramebufferTextureLayer(m_frameBuffer, GL_COLOR_ATTACHMENT0 + attachment, cubemap, miplevel, layer);
 
             // If the attachment has been set before skip increasing the count
             if (m_colorAttachmentCache[attachment] == false)
             {
                 m_colorAttachmentCount++;
                 m_colorAttachmentCache[attachment] = true;
+                m_drawBuffersSet = false;
             }
-
-            m_drawBuffersSet = false;
         }
     }
 
