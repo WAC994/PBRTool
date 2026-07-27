@@ -10,6 +10,7 @@
 #include <framebuffer.hpp>
 #include <lights.hpp>
 #include <render_tools.hpp>
+#include <iostream>
 
 using namespace pt;
 
@@ -33,9 +34,14 @@ class PBRTest : public Scene
     
     Model headphone = Model("assets/models/headphone/headphone.gltf");
     
-    Shader cubeMapCaptureShader = Shader("assets/shaders/cube_map_capture.vert", "assets/shaders/hdri_envi.frag", SHADERFILEINFO::TEXTFILE);
-    uint32_t enviTexture = gen2DTextureFromFile("assets/images/autoshop.hdr", GL_RGB16F, GL_CLAMP_TO_EDGE, false);
-    
+    Shader enviCubeMapShader = Shader("assets/shaders/cube_map_capture.vert", "assets/shaders/hdri_envi.frag", SHADERFILEINFO::TEXTFILE);
+    Shader irraCubeMapShader = Shader("assets/shaders/cube_map_capture.vert", "assets/shaders/irradiance.frag", SHADERFILEINFO::TEXTFILE);
+    Shader preFilterCubeMapShader = Shader("assets/shaders/cube_map_capture.vert", "assets/shaders/pre_filter.frag", SHADERFILEINFO::TEXTFILE);
+    uint32_t enviTexture = gen2DTextureFromFile("assets/images/autoshop.hdr", GL_RGB16F, GL_CLAMP_TO_EDGE, true);
+    uint32_t enviCubeMap;
+    uint32_t irraCubeMap;
+    uint32_t preFilterCubeMap;
+
     void onStart() override
     {
         BatchRenderer::init();
@@ -48,8 +54,17 @@ class PBRTest : public Scene
         deferredBuffer.colorAttachment(deferredTarget, 0, 0);
         deferredBuffer.depthAttachment(deferredDepth, 0);
 
-        cubeMapCaptureShader.bindTexture(0, enviTexture);
-        uint32_t cubeMap = renderToCubeMap(512, GL_R11F_G11F_B10F);
+        // Generate the environment cube map
+        enviCubeMapShader.bindTexture(0, enviTexture);
+        enviCubeMap = renderToCubeMap(1024, GL_R11F_G11F_B10F, true);
+
+        // Generate the irradiance cube map
+        irraCubeMapShader.bindTexture(0, enviCubeMap);
+        irraCubeMap = renderToCubeMap(32, GL_R11F_G11F_B10F);
+
+        // Generate the prefilter environment cube map
+        preFilterCubeMapShader.bindTexture(0, enviCubeMap);
+        preFilterCubeMap = renderIBLPreFilter(1024, GL_R11F_G11F_B10F, preFilterCubeMapShader);
     }
     
     void onEvent(Event& event) override
@@ -73,7 +88,7 @@ class PBRTest : public Scene
         LightManager::update();
     }
     
-    Shader enviShader = Shader("assets/shaders/sky_box.vert", "assets/shaders/hdri_envi.frag", SHADERFILEINFO::TEXTFILE);
+    Shader enviShader = Shader("assets/shaders/sky_box.vert", "assets/shaders/sky_box.frag", SHADERFILEINFO::TEXTFILE);
     
     void onRender() override
     {
@@ -86,12 +101,13 @@ class PBRTest : public Scene
         // Lighting pass
         deferredBuffer.bind();
         lightingShader.bindTextures(0, 6, gBufferTextures.data());
+        lightingShader.bindTexture(6, irraCubeMap);
         screen.draw();
 
         gBuffer.blit(deferredBuffer.getHandle(), App::getInstance().config.width, App::getInstance().config.height, GL_DEPTH_BUFFER_BIT);
 
         // Forward render pass
-        enviShader.bindTexture(0, enviTexture);
+        enviShader.bindTexture(0, preFilterCubeMap);
         glDepthFunc(GL_LEQUAL);
         drawCube(true);
         glDepthFunc(GL_LESS);

@@ -8,13 +8,24 @@
 
 namespace pt
 {
+    struct TextureData
+    {
+        uint32_t width;
+        uint32_t height;
+        uint32_t channels;
+        uint32_t levels;
+        GLenum bitformat;
+        GLenum format;
+        GLenum dataType;
+    };
+    TextureData& getTextureData(uint32_t texture);
     void loadGLFWIcon(GLFWwindow* window, const std::string_view& path);
-    uint32_t gen2DTexture(int width, int height, uint32_t bitFormat = GL_RGB8, uint32_t wrap = GL_CLAMP_TO_EDGE, uint32_t filter = GL_NEAREST, bool useMips = false, uint32_t mipMapNum = 0);
-    uint32_t genRenderTexture(int width, int height, uint32_t bitFormat = GL_DEPTH24_STENCIL8);
-    uint32_t gen2DTextureFromFile(const std::string_view& path, uint32_t bitFormat = GL_RGB8, uint32_t wrap = GL_REPEAT, bool useMips = true, uint32_t mipMapNum = 0);
-    uint32_t genCubeMapTexture(int width, int height, uint32_t bitFormat, bool useMips = false, uint32_t mipMapNum = 0);
+    uint32_t gen2DTexture(int width, int height, uint32_t bitformat = GL_RGB8, uint32_t wrap = GL_CLAMP_TO_EDGE, uint32_t filter = GL_NEAREST, bool usemips = false, uint32_t mipmapnum = 0);
+    uint32_t genRenderTexture(int width, int height, uint32_t bitformat = GL_DEPTH24_STENCIL8);
+    uint32_t gen2DTextureFromFile(const std::string_view& path, uint32_t bitformat = GL_RGB8, uint32_t wrap = GL_REPEAT, bool usemips = true, uint32_t mipmapnum = 0);
+    uint32_t genCubeMapTexture(int width, int height, uint32_t bitformat, bool usemips = false, uint32_t mipmapnum = 0);
     uint32_t genDepthStencilRenderBuffer(int width, int height);
-    uint64_t genBindless2DTexture(int width, int height, uint32_t bitFormat = GL_RGB8, uint32_t wrap = GL_CLAMP_TO_EDGE, uint32_t filter = GL_NEAREST, bool useMips = false, uint32_t mipMapNum = 0);
-    uint64_t genBindless2DTextureFromFile(const std::string_view& path, uint32_t bitFormat = GL_RGB8, uint32_t wrap = GL_REPEAT, bool useMips = true, uint32_t mipMapNum = 0);
+    uint64_t genBindless2DTexture(int width, int height, uint32_t bitformat = GL_RGB8, uint32_t wrap = GL_CLAMP_TO_EDGE, uint32_t filter = GL_NEAREST, bool usemips = false, uint32_t mipmapnum = 0);
+    uint64_t genBindless2DTextureFromFile(const std::string_view& path, uint32_t bitformat = GL_RGB8, uint32_t wrap = GL_REPEAT, bool usemips = true, uint32_t mipmapnum = 0);
     std::array<uint32_t, MAX_G_BUFFER_TEXTURES> genGBufferTextures(int width, int height);
 }

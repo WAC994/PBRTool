@@ -1,9 +1,10 @@
 #include "render_tools.hpp"
 #include <glm/glm.hpp>
 #include <glm/gtc/matrix_transform.hpp>
+#include <iostream>
+#include "PBR_Tool_Core.hpp"
 #include "framebuffer.hpp"
 #include "texture.hpp"
-#include "PBR_Tool_Core.hpp"
 
 namespace pt
 {
@@ -28,7 +29,7 @@ namespace pt
         4, 5, 6, 4, 6, 7  // Back Face -Z
     };
 
-    
+
 
     static bool cubeCreated = false;
     GLuint cubeVA, cubeVB, cubeIB;
@@ -62,7 +63,7 @@ namespace pt
         }
 
         setMeshTransform();
-        
+
         bindVertexArray(cubeVA);
         if (flipfaces)
             glDisable(GL_CULL_FACE);
@@ -93,19 +94,19 @@ namespace pt
     class CubeMapGenImpl
     {
     private:
-    uint32_t m_cubeProjBuffer;
-    bool m_isSetup = false;
-    glm::mat4 m_captureProjection = glm::perspective(glm::radians(90.0f), 1.0f, 0.1f, 10.0f);
+        uint32_t m_cubeProjBuffer;
+        bool m_isSetup = false;
+        glm::mat4 m_captureProjection = glm::perspective(glm::radians(90.0f), 1.0f, 0.1f, 10.0f);
 
-    glm::mat4 m_captureViews[6] =
-    {
-        glm::lookAt(glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3( 1.0f,  0.0f,  0.0f), glm::vec3(0.0f, -1.0f,  0.0f)),
-        glm::lookAt(glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(-1.0f,  0.0f,  0.0f), glm::vec3(0.0f, -1.0f,  0.0f)),
-        glm::lookAt(glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3( 0.0f,  1.0f,  0.0f), glm::vec3(0.0f,  0.0f,  1.0f)),
-        glm::lookAt(glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3( 0.0f, -1.0f,  0.0f), glm::vec3(0.0f,  0.0f, -1.0f)),
-        glm::lookAt(glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3( 0.0f,  0.0f,  1.0f), glm::vec3(0.0f, -1.0f,  0.0f)),
-        glm::lookAt(glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3( 0.0f,  0.0f, -1.0f), glm::vec3(0.0f, -1.0f,  0.0f))
-    };
+        glm::mat4 m_captureViews[6] =
+        {
+            glm::lookAt(glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(1.0f,  0.0f,  0.0f), glm::vec3(0.0f, -1.0f,  0.0f)),
+            glm::lookAt(glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(-1.0f,  0.0f,  0.0f), glm::vec3(0.0f, -1.0f,  0.0f)),
+            glm::lookAt(glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(0.0f,  1.0f,  0.0f), glm::vec3(0.0f,  0.0f,  1.0f)),
+            glm::lookAt(glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(0.0f, -1.0f,  0.0f), glm::vec3(0.0f,  0.0f, -1.0f)),
+            glm::lookAt(glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(0.0f,  0.0f,  1.0f), glm::vec3(0.0f, -1.0f,  0.0f)),
+            glm::lookAt(glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(0.0f,  0.0f, -1.0f), glm::vec3(0.0f, -1.0f,  0.0f))
+        };
     public:
         void setup()
         {
@@ -127,6 +128,7 @@ namespace pt
         }
         FrameBuffer framebuffer;
     };
+
     static CubeMapGenImpl cubeMapGenerator;
 
     uint32_t renderToCubeMap(int resolution, uint32_t bitFormat, bool useMips, uint32_t mipMapNum)
@@ -136,23 +138,30 @@ namespace pt
 
         // Set the viewport to the resolution
         glViewport(0, 0, resolution, resolution);
-        
+
         // Update projection for capture
         cubeMapGenerator.updateProjection();
-        
+
         for (uint32_t i = 0; i < 6; i++)
         {
             // Upate view of each cube side
             cubeMapGenerator.updateView(i);
-            
+
             // Attach and bind the framebuffer cube map side to capture to
             cubeMapGenerator.framebuffer.cubeMapAttachment(cubeMap, 0, i);
             cubeMapGenerator.framebuffer.bind();
-            
-            // Draw Cube side
+
+            // Draw cube side
             drawCubeSide(i, true);
         }
-        
+
+        // Generate mip maps after drawing
+        if (useMips)
+        {
+            glTextureParameteri(cubeMap, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
+            glGenerateTextureMipmap(cubeMap);
+        }
+
         // Reset the viewport after capturing
         glViewport(0, 0, App::getInstance().config.width, App::getInstance().config.height);
 
@@ -160,6 +169,56 @@ namespace pt
         FrameBuffer::bindDefault();
 
         // Return the filled cube map
+        return cubeMap;
+    }
+
+    uint32_t renderIBLPreFilter(int resolution, uint32_t bitFormat, Shader& iblprefiltershader)
+    {
+        uint32_t cubeMap = genCubeMapTexture(resolution, resolution, bitFormat, true, 6);
+        cubeMapGenerator.setup();
+        uint32_t maxLevels = getTextureData(cubeMap).levels;
+
+        // Update projection for capture
+        cubeMapGenerator.updateProjection();
+        iblprefiltershader.setFloat(1, resolution);
+
+        for (uint32_t mipLevel = 0; mipLevel < maxLevels; mipLevel++)
+        {
+            uint32_t mipResolution = resolution * std::pow(0.5f, mipLevel);
+
+            // Set the viewport to the resolution of every mip map level
+            glViewport(0, 0, mipResolution, mipResolution);
+
+            // Calculate the roughness to send to the shader
+            float roughness = (float)mipLevel / (float)(maxLevels - 1);
+            float alpha2 = std::pow(roughness, 4.0f);
+
+            // Send alpha2 to ibl prefilter shader
+            iblprefiltershader.setFloat(0, alpha2);
+
+            // Draw all side of the pre-filter cube map for each roughness level
+            for (uint32_t i = 0; i < 6; i++)
+            {
+                // Upate view of each cube side
+                cubeMapGenerator.updateView(i);
+
+                // Attach and bind the framebuffer cube map side to capture to
+                cubeMapGenerator.framebuffer.cubeMapAttachment(cubeMap, 0, i, mipLevel);
+                cubeMapGenerator.framebuffer.bind();
+
+                // Draw cube side
+                drawCubeSide(i, true);
+            }
+
+            std::clog << std::format("Mip resolution: {} Linear roughness: {:.3f} Alpha squared: {:.3f}\n", mipResolution, roughness, alpha2);
+        }
+
+        // Reset the viewport after capturing
+        glViewport(0, 0, App::getInstance().config.width, App::getInstance().config.height);
+
+        // Bind the defualt buffer so any onther glClear call doesnt affect the cube map
+        FrameBuffer::bindDefault();
+
         return cubeMap;
     }
 }

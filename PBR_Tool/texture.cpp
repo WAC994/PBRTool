@@ -7,6 +7,15 @@
 
 namespace pt
 {
+    static std::map<GLuint, TextureData> s_imageCache;
+    static std::map<const char*, GLuint> s_imageTextureCache;
+
+    
+    TextureData& getTextureData(uint32_t texture)
+    {
+        return s_imageCache[texture];
+    }
+    
     void loadGLFWIcon(GLFWwindow* window, const std::string_view& path)
     {
         GLFWimage image;
@@ -20,25 +29,24 @@ namespace pt
         glfwSetWindowIcon(window, 1, &image);
         stbi_image_free(data);
     }
-
-    static std::map<const char*, GLuint> s_imageTextureCache;
-
+    
+    
     enum class IF // Image format
     {
         _8,
         _16,
         _f
     };
-
+    
     struct GLTextureData
     {
-        GLenum Format;
-        GLenum DataType;
-        int Channels;
-        IF IFormat;
+        GLenum format;
+        GLenum dataType;
+        int channels;
+        IF imageFormat;
     };
-
-    std::unordered_map<GLenum, GLTextureData> GLTexData = {
+    
+    std::unordered_map<GLenum, GLTextureData> s_GLTextureDataMap = {
         // 8 bits per channel
         {GL_R8, GLTextureData{GL_RED, GL_UNSIGNED_BYTE, 1, IF::_8}},
         {GL_RG8, GLTextureData{GL_RG, GL_UNSIGNED_BYTE, 2, IF::_8}},
@@ -67,90 +75,109 @@ namespace pt
         // 11 bits Red 11 bits green 10 bits blue
         {GL_R11F_G11F_B10F, GLTextureData{GL_RGB, GL_FLOAT, 3, IF::_f}}
     };
+    
+    void storeTextureData(uint32_t texture, int width, int height, uint32_t levels, uint32_t bitformat)
+    {
+        TextureData cacheItem;
+        auto glTextureData = s_GLTextureDataMap[bitformat];
+        cacheItem.width = width;
+        cacheItem.height = height;
+        cacheItem.channels = glTextureData.channels;
+        cacheItem.levels = levels;
+        cacheItem.bitformat = bitformat;
+        cacheItem.format = glTextureData.format;
+        cacheItem.dataType = glTextureData.dataType;
+        s_imageCache[texture] = cacheItem;
+    }
 
     static void* getImage(const char* path, int* width, int* height, const GLTextureData& data)
     {
-        void* Data = nullptr;
+        void* imageData = nullptr;
         int Channels;
-        switch (data.IFormat)
+        switch (data.imageFormat)
         {
-        case IF::_8:
-            Data = stbi_load(path, width, height, &Channels, data.Channels);
+            case IF::_8:
+            imageData = stbi_load(path, width, height, &Channels, data.channels);
             break;
-        case IF::_16:
-            Data = stbi_load_16(path, width, height, &Channels, data.Channels);
+            case IF::_16:
+            imageData = stbi_load_16(path, width, height, &Channels, data.channels);
             break;
-        case IF::_f:
-            Data = stbi_loadf(path, width, height, &Channels, data.Channels);
+            case IF::_f:
+            imageData = stbi_loadf(path, width, height, &Channels, data.channels);
             break;
         }
-        if (Data)
-            return Data;
+        if (imageData)
+        return imageData;
         else
         {
             std::cerr << "Error: Failed to load image from " << path << '\n';
             return nullptr;
         }
     }
-
-    uint32_t gen2DTextureFromFile(const std::string_view& path, uint32_t bitFormat, uint32_t wrap, bool useMips,
-        uint32_t mipMapNum)
+    
+    uint32_t gen2DTextureFromFile(const std::string_view& path, uint32_t bitformat, uint32_t wrap, bool usemips, uint32_t mipmapnum)
     {
-        const char* Path = path.data();
-
-        if (s_imageTextureCache.find(Path) == s_imageTextureCache.end())
+        const char* imagePath = path.data();
+        
+        if (s_imageTextureCache.find(imagePath) == s_imageTextureCache.end())
         {
             stbi_set_flip_vertically_on_load(true);
-            GLuint Texture;
-            int Width, Height;
-            auto TextureData = GLTexData[bitFormat];
-            void* Image = getImage(Path, &Width, &Height, TextureData);
-            glCreateTextures(GL_TEXTURE_2D, 1, &Texture);
+            GLuint texture;
+            int width, height;
+            auto glTextureData = s_GLTextureDataMap[bitformat];
+            void* imageData = getImage(imagePath, &width, &height, glTextureData);
+            glCreateTextures(GL_TEXTURE_2D, 1, &texture);
 
-            GLsizei Levels = 0;
-            if (useMips && mipMapNum > 0)
-                Levels = mipMapNum;
-            else if (useMips)
-                Levels = 1 + static_cast<GLsizei>(std::floor(std::log2(std::max(Width, Height))));
+            GLsizei levels = 0;
+            if (usemips && mipmapnum > 0)
+                levels = mipmapnum;
+            else if (usemips)
+                levels = 1 + static_cast<GLsizei>(std::floor(std::log2(std::max(width, height))));
             else
-                Levels = 1;
+                levels = 1;
 
-            glTextureStorage2D(Texture, Levels, bitFormat, Width, Height);
-            glTextureSubImage2D(Texture, 0, 0, 0, Width, Height, TextureData.Format, TextureData.DataType, Image);
-            glTextureParameteri(Texture, GL_TEXTURE_WRAP_S, wrap);
-            glTextureParameteri(Texture, GL_TEXTURE_WRAP_T, wrap);
-            glTextureParameteri(Texture, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
-            glTextureParameteri(Texture, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-            if (useMips)
-                glGenerateTextureMipmap(Texture);
-            stbi_image_free(Image);
-            return Texture;
+            glTextureStorage2D(texture, levels, bitformat, width, height);
+            glTextureSubImage2D(texture, 0, 0, 0, width, height, glTextureData.format, glTextureData.dataType, imageData);
+            glTextureParameteri(texture, GL_TEXTURE_WRAP_S, wrap);
+            glTextureParameteri(texture, GL_TEXTURE_WRAP_T, wrap);
+            glTextureParameteri(texture, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
+            glTextureParameteri(texture, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+            if (usemips)
+                glGenerateTextureMipmap(texture);
+            stbi_image_free(imageData);
+
+            storeTextureData(texture, width, height, levels, bitformat);
+
+            return texture;
         }
-        return s_imageTextureCache[Path];
+        return s_imageTextureCache[imagePath];
     }
 
-    uint32_t gen2DTexture(int width, int height, uint32_t bitFormat, uint32_t wrap, uint32_t filter, bool useMips,
-        uint32_t mipMapNum)
+    uint32_t gen2DTexture(int width, int height, uint32_t bitformat, uint32_t wrap, uint32_t filter, bool usemips, uint32_t mipmapnum)
     {
-        GLuint Texture;
-        glCreateTextures(GL_TEXTURE_2D, 1, &Texture);
+        auto glTextureData = s_GLTextureDataMap[bitformat];
+        GLuint texture;
+        glCreateTextures(GL_TEXTURE_2D, 1, &texture);
 
-        GLsizei Levels = 0;
-        if (useMips && mipMapNum > 0)
-            Levels = mipMapNum;
-        else if (useMips)
-            Levels = 1 + static_cast<GLsizei>(std::floor(std::log2(std::max(width, height))));
+        GLsizei levels = 0;
+        if (usemips && mipmapnum > 0)
+            levels = mipmapnum;
+        else if (usemips)
+            levels = 1 + static_cast<GLsizei>(std::floor(std::log2(std::max(width, height))));
         else
-            Levels = 1;
+            levels = 1;
 
-        glTextureStorage2D(Texture, Levels, bitFormat, width, height);
-        glTextureParameteri(Texture, GL_TEXTURE_WRAP_S, wrap);
-        glTextureParameteri(Texture, GL_TEXTURE_WRAP_T, wrap);
-        glTextureParameteri(Texture, GL_TEXTURE_MIN_FILTER, useMips ? GL_LINEAR_MIPMAP_LINEAR : filter);
-        glTextureParameteri(Texture, GL_TEXTURE_MAG_FILTER, filter);
-        if (useMips)
-            glGenerateTextureMipmap(Texture);
-        return Texture;
+        glTextureStorage2D(texture, levels, bitformat, width, height);
+        glTextureParameteri(texture, GL_TEXTURE_WRAP_S, wrap);
+        glTextureParameteri(texture, GL_TEXTURE_WRAP_T, wrap);
+        glTextureParameteri(texture, GL_TEXTURE_MIN_FILTER, usemips ? GL_LINEAR_MIPMAP_LINEAR : filter);
+        glTextureParameteri(texture, GL_TEXTURE_MAG_FILTER, filter);
+        if (usemips)
+            glGenerateTextureMipmap(texture);
+
+        storeTextureData(texture, width, height, levels, bitformat);
+
+        return texture;
     }
 
     uint32_t genRenderTexture(int width, int height, uint32_t bitFormat)
@@ -162,24 +189,30 @@ namespace pt
         glTextureParameteri(RenderTexture, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
         return RenderTexture;
     }
-
-    uint32_t genCubeMapTexture(int width, int height, uint32_t bitFormat, bool useMips, uint32_t mipMapNum)
+    
+    uint32_t genCubeMapTexture(int width, int height, uint32_t bitformat, bool usemips, uint32_t mipmapnum)
     {
-        uint32_t CubeMap;
-        glCreateTextures(GL_TEXTURE_CUBE_MAP, 1, &CubeMap);
-
-        GLsizei Levels = 0;
-        if (useMips && mipMapNum > 0)
-            Levels = mipMapNum;
-        else if (useMips)
-            Levels = 1 + static_cast<GLsizei>(std::floor(std::log2(std::max(width, height))));
+        uint32_t cubeMap;
+        glCreateTextures(GL_TEXTURE_CUBE_MAP, 1, &cubeMap);
+        
+        GLsizei levels = 0;
+        if (usemips && mipmapnum > 0)
+        levels = mipmapnum;
+        else if (usemips)
+        levels = 1 + static_cast<GLsizei>(std::floor(std::log2(std::max(width, height))));
         else
-            Levels = 1;
+        levels = 1;
+        
+        glTextureStorage2D(cubeMap, levels, bitformat, width, height);
+        if (usemips)
+        {
+            glGenerateTextureMipmap(cubeMap);
+            glTextureParameteri(cubeMap, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
+        }
 
-        glTextureStorage2D(CubeMap, Levels, bitFormat, width, height);
-        if (useMips)
-            glGenerateTextureMipmap(CubeMap);
-        return CubeMap;
+        storeTextureData(cubeMap, width, height, levels, bitformat);
+
+        return cubeMap;
     }
 
     uint32_t genDepthStencilRenderBuffer(int width, int height)

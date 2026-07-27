@@ -27,6 +27,8 @@ layout(binding = 3) uniform sampler2D g_position;
 layout(binding = 4) uniform sampler2D g_normal;
 layout(binding = 5) uniform sampler2D g_view_dir;
 
+layout(binding = 6) uniform samplerCube u_irradiance_cube_map;
+
 struct Surface
 {
     vec3 albedo;
@@ -46,7 +48,7 @@ vec3 fresnel_schlick(vec3 f0, vec3 f90, float costheta)
     return f0 + (f90 - f0) * exp2((-5.55473 * costheta - 6.98316) * costheta); // using approximation for pow(costheta, 5.0)
 }
 
-float trowbridge_reitz_ggx(float alpha2, float ndoth)
+float trowbridge_reitz_ggx(float ndoth, float alpha2)
 {
     float denom = (ndoth * alpha2 - ndoth) * ndoth + 1;
     return alpha2 / (PI * denom * denom);
@@ -88,17 +90,17 @@ vec3 point_lighting(LightData light, Surface surface)
 
     vec3 fresnel = fresnel_schlick(surface.f0, vec3(1.0), ldoth);
 
-    float normal_distribution = trowbridge_reitz_ggx(surface.alpha2, ndoth);
+    float normal_distribution = trowbridge_reitz_ggx(ndoth, surface.alpha2);
 
     float geometery = smith_ggx_fast(surface.ndotv, ndotl, surface.alpha);
 
     vec3 diffuse_constant = vec3(1.0) - fresnel;
     diffuse_constant *= 1.0 - surface.metallic;
 
-    return (diffuse_constant * diffuse + (fresnel * normal_distribution * geometery)) * radiance * ndotl * surface.occlusion;
+    return (diffuse_constant * diffuse + (fresnel * normal_distribution * geometery)) * radiance * ndotl;
 }
 
-layout(location = 0) out vec4 f_color;
+layout(location = 0) out vec3 f_color;
 
 void main()
 {
@@ -117,10 +119,22 @@ void main()
     surface.f0 = mix(vec3(0.04), surface.albedo, surface.metallic);
     surface.ndotv = max(dot(surface.normal, surface.view_dir), 1e-4);
 
+    // Discrete lighting
     vec3 output_radiance = vec3(0.0);
     for (uint i = 0; i < light_count; i++)
     {
         output_radiance += point_lighting(lights[i], surface);
     }
-    f_color = vec4(output_radiance + surface.emission, 1.0);
+    output_radiance += surface.emission;
+    
+    // Image based lighting
+    vec3 irradiance = texture(u_irradiance_cube_map, surface.normal).rgb * surface.occlusion;
+
+    vec3 roughness_factor = max(vec3(1.0 - surface.roughness), surface.f0);
+    vec3 specular_constant = fresnel_schlick(surface.f0, roughness_factor, surface.ndotv);
+    vec3 diffuse_constant = 1.0 - specular_constant;
+
+    vec3 diffuse = surface.albedo * irradiance;
+
+    f_color = (diffuse_constant * diffuse) + output_radiance;
 }
