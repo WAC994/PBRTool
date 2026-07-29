@@ -1,6 +1,6 @@
 #version 460 core
 
-const uint MAX_SAMPLES = 1024;
+const uint MAX_SAMPLES = 4096;
 const float PI = 3.1415926;
 const float ANGLE_360 = 2.0 * PI;
 const float ANGLE_90 = 0.5 * PI;
@@ -44,12 +44,11 @@ float trowbridge_reitz_ggx(float ndoth, float alpha2)
     return alpha2 / (PI * denom * denom);
 }
 
-
 layout(location = 0) in vec3 v_texcoord; 
 
 layout(binding = 0) uniform samplerCube u_envi_cube_map;
-layout(location = 0) uniform float u_alpha2;
-layout(location = 1) uniform float u_resolution;
+layout(location = 0) uniform float u_resolution;
+layout(location = 1) uniform float u_alpha2;
 
 layout(location = 0) out vec3 f_color;
 

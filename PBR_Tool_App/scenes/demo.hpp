@@ -19,21 +19,21 @@ class PBRTest : public Scene
     Shader gBufferShader = Shader("assets/shaders/mesh_batched.vert", "assets/shaders/gbuffer.frag", SHADERFILEINFO::TEXTFILE);
     Shader lightingShader = Shader("assets/shaders/screen.vert", "assets/shaders/lighting_deferred.frag", SHADERFILEINFO::TEXTFILE);
     Shader postProcessShader = Shader("assets/shaders/screen.vert", "assets/shaders/post_process.frag", SHADERFILEINFO::TEXTFILE);
-    
+
     Camera camera;
-    
+
     FrameBuffer gBuffer;
     std::array<uint32_t, MAX_G_BUFFER_TEXTURES> gBufferTextures = genGBufferTextures(App::getInstance().config.width, App::getInstance().config.height);
     uint32_t gBufferDepth = genRenderTexture(App::getInstance().config.width, App::getInstance().config.height, GL_DEPTH_COMPONENT24);
-    
+
     FrameBuffer deferredBuffer;
-    uint32_t deferredTarget =  genRenderTexture(App::getInstance().config.width, App::getInstance().config.height, GL_R11F_G11F_B10F);
-    uint32_t deferredDepth =  genRenderTexture(App::getInstance().config.width, App::getInstance().config.height, GL_DEPTH_COMPONENT24);
+    uint32_t deferredTarget = genRenderTexture(App::getInstance().config.width, App::getInstance().config.height, GL_R11F_G11F_B10F);
+    uint32_t deferredDepth = genRenderTexture(App::getInstance().config.width, App::getInstance().config.height, GL_DEPTH_COMPONENT24);
 
     Screen screen;
-    
-    Model headphone = Model("assets/models/headphone/headphone.gltf");
-    
+
+    Model headphone = Model("assets/models/gravity-generator/gravity-generator.gltf");
+
     Shader enviCubeMapShader = Shader("assets/shaders/cube_map_capture.vert", "assets/shaders/hdri_envi.frag", SHADERFILEINFO::TEXTFILE);
     Shader irraCubeMapShader = Shader("assets/shaders/cube_map_capture.vert", "assets/shaders/irradiance.frag", SHADERFILEINFO::TEXTFILE);
     Shader preFilterCubeMapShader = Shader("assets/shaders/cube_map_capture.vert", "assets/shaders/pre_filter.frag", SHADERFILEINFO::TEXTFILE);
@@ -41,16 +41,17 @@ class PBRTest : public Scene
     uint32_t enviCubeMap;
     uint32_t irraCubeMap;
     uint32_t preFilterCubeMap;
+    uint32_t BRDFlut;
 
     void onStart() override
     {
         BatchRenderer::init();
         LightManager::init();
         MaterialManager::init();
-        
+
         gBuffer.colorAttachments(gBufferTextures.data(), 0, gBufferTextures.size(), 0);
         gBuffer.depthAttachment(gBufferDepth, 0);
-        
+
         deferredBuffer.colorAttachment(deferredTarget, 0, 0);
         deferredBuffer.depthAttachment(deferredDepth, 0);
 
@@ -65,31 +66,34 @@ class PBRTest : public Scene
         // Generate the prefilter environment cube map
         preFilterCubeMapShader.bindTexture(0, enviCubeMap);
         preFilterCubeMap = renderIBLPreFilter(1024, GL_R11F_G11F_B10F, preFilterCubeMapShader);
+
+        // Generate BRDF lut
+        BRDFlut = generateBRDFLUT(512);
     }
-    
+
     void onEvent(Event& event) override
     {
         EventManager eventManager(event);
-        
+
         eventManager.dispatch<MousePositionEvent>([this](MousePositionEvent& e)
-        {
-            camera.rotate(e.dx, e.dy);
-        });
+            {
+                camera.rotate(e.dx, e.dy);
+            });
     }
-    
+
     void onUpdate(float deltaTime) override
     {
         camera.move(Input::axis2D(), deltaTime);
-        
-        Light bulb1(glm::vec3(200.0f, 200.0f, 180.0f), glm::vec3(2.0f, 2.5f, 2.0f));
-        Light bulb2(glm::vec3(50.0f, 10.0f, 0.0f), glm::vec3(-2.0f, 0.0f, -2.0f));
-        
+
+        Light bulb1(glm::vec3(20.0f, 20.0f, 18.0f), glm::vec3(2.0f, 2.5f, 2.0f));
+        Light bulb2(glm::vec3(5.0f, 1.0f, 0.0f), glm::vec3(-2.0f, 0.0f, -2.0f));
+
         MaterialManager::update();
         LightManager::update();
     }
-    
+
     Shader enviShader = Shader("assets/shaders/sky_box.vert", "assets/shaders/sky_box.frag", SHADERFILEINFO::TEXTFILE);
-    
+
     void onRender() override
     {
         // G Buffer pass
@@ -102,12 +106,15 @@ class PBRTest : public Scene
         deferredBuffer.bind();
         lightingShader.bindTextures(0, 6, gBufferTextures.data());
         lightingShader.bindTexture(6, irraCubeMap);
+        lightingShader.bindTexture(7, preFilterCubeMap);
+        lightingShader.bindTexture(8, BRDFlut);
+        lightingShader.setBool(0, Input::keyReleased(GLFW_KEY_O));
         screen.draw();
 
         gBuffer.blit(deferredBuffer.getHandle(), App::getInstance().config.width, App::getInstance().config.height, GL_DEPTH_BUFFER_BIT);
 
         // Forward render pass
-        enviShader.bindTexture(0, preFilterCubeMap);
+        enviShader.bindTexture(0, enviCubeMap);
         glDepthFunc(GL_LEQUAL);
         drawCube(true);
         glDepthFunc(GL_LESS);
@@ -116,5 +123,43 @@ class PBRTest : public Scene
         FrameBuffer::bindDefault();
         postProcessShader.bindTexture(0, deferredTarget);
         screen.draw();
+    }
+};
+
+class PvsPB : public Scene
+{
+    Camera camera;
+    Model plane = Model("assets/models/sphere/sphere.gltf", false);
+    Shader texturedMeshShader = Shader("assets/shaders/mesh.vert", "assets/shaders/light.frag", SHADERFILEINFO::TEXTFILE);
+    uint32_t floor = gen2DTextureFromFile("assets/images/floor.png");
+
+    void onStart() override
+    {
+        LightManager::init();
+        camera.position = glm::vec3(0.0f, 0.5f, 2.0f);
+    }
+
+    void onEvent(Event& event) override
+    {
+        EventManager eventManager(event);
+
+        eventManager.dispatch<MousePositionEvent>([this](MousePositionEvent& e)
+            {
+                camera.rotate(e.dx, e.dy);
+            });
+    }
+
+    void onUpdate(float deltaTime) override
+    {
+        camera.move(Input::axis2D(), deltaTime);
+    }
+    
+    void onRender() override
+    {
+        texturedMeshShader.bindTexture(0, floor);
+        texturedMeshShader.setBool(0, Input::keyReleased(GLFW_KEY_O));
+        plane.draw();
+        Light bulb(glm::vec3(1.0f, 1.0f, 1.0f), glm::vec3(2.0f, 3.5f, 3.5f));
+        LightManager::update();
     }
 };

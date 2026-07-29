@@ -1,8 +1,11 @@
 #version 460 core
 
+layout(location = 0) uniform bool u_switch;
+
 const float PI = 3.1415926;
 const float INVPI = 0.3183098;
 const float INV_ENERGY_FACTOR = 0.6622516;
+const float REFLECT_PRE_FILTER_LODS = 5.0;
 
 const uint LIGHTS_SSBO_BINDING_POINT = 4;
 
@@ -28,6 +31,9 @@ layout(binding = 4) uniform sampler2D g_normal;
 layout(binding = 5) uniform sampler2D g_view_dir;
 
 layout(binding = 6) uniform samplerCube u_irradiance_cube_map;
+layout(binding = 7) uniform samplerCube u_pre_filter_cube_map;
+layout(binding = 8) uniform sampler2D u_BRDF_LUT;
+
 
 struct Surface
 {
@@ -37,7 +43,7 @@ struct Surface
     vec3 normal;
     vec3 view_dir;
     vec3 f0;
-    float occlusion;
+    float occlusion, spec_occlusion;
     float roughness, alpha, alpha2;
     float metallic;
     float ndotv;
@@ -86,7 +92,7 @@ vec3 point_lighting(LightData light, Surface surface)
     float ldoth = max(dot(light_dir, halfway_dir), 0.0);
     float ndoth = max(dot(surface.normal, halfway_dir), 0.0);
 
-    vec3 diffuse = surface.albedo * DICE_Disney_diffuse(surface.ndotv, ndotl, ldoth, surface.roughness) * INVPI;
+    vec3 diffuse = surface.albedo * DICE_Disney_diffuse(surface.ndotv, ndotl, ldoth, surface.roughness) * surface.occlusion * INVPI;
 
     vec3 fresnel = fresnel_schlick(surface.f0, vec3(1.0), ldoth);
 
@@ -97,7 +103,14 @@ vec3 point_lighting(LightData light, Surface surface)
     vec3 diffuse_constant = vec3(1.0) - fresnel;
     diffuse_constant *= 1.0 - surface.metallic;
 
-    return (diffuse_constant * diffuse + (fresnel * normal_distribution * geometery)) * radiance * ndotl;
+    vec3 specular = fresnel * normal_distribution * geometery * surface.spec_occlusion;
+
+    return (diffuse_constant * diffuse + specular) * radiance * ndotl;
+}
+
+float specular_occlusion(float ndotv, float occlusion, float roughness)
+{
+    return max(pow(ndotv + occlusion, exp2(-16.0 * roughness - 1.0)) - 1.0 + occlusion, 0.0);    
 }
 
 layout(location = 0) out vec3 f_color;
@@ -118,6 +131,7 @@ void main()
     surface.metallic = orms.b;
     surface.f0 = mix(vec3(0.04), surface.albedo, surface.metallic);
     surface.ndotv = max(dot(surface.normal, surface.view_dir), 1e-4);
+    surface.spec_occlusion = specular_occlusion(surface.ndotv, surface.occlusion, surface.alpha);
 
     // Discrete lighting
     vec3 output_radiance = vec3(0.0);
@@ -126,15 +140,23 @@ void main()
         output_radiance += point_lighting(lights[i], surface);
     }
     output_radiance += surface.emission;
-    
-    // Image based lighting
-    vec3 irradiance = texture(u_irradiance_cube_map, surface.normal).rgb * surface.occlusion;
 
+    // Image based lighting
+    // Specular IBL
     vec3 roughness_factor = max(vec3(1.0 - surface.roughness), surface.f0);
     vec3 specular_constant = fresnel_schlick(surface.f0, roughness_factor, surface.ndotv);
-    vec3 diffuse_constant = 1.0 - specular_constant;
+    vec3 reflect_dir = reflect(-surface.view_dir, surface.normal);
 
+    vec3 prefilter = textureLod(u_pre_filter_cube_map, reflect_dir, surface.roughness * REFLECT_PRE_FILTER_LODS).rgb;
+    vec2 envi_bdrf = texture(u_BRDF_LUT, vec2(surface.ndotv, surface.roughness)).rg;
+    vec3 specular = prefilter * (specular_constant * envi_bdrf.x + envi_bdrf.y) * surface.spec_occlusion;
+
+    // Diffuse IBL
+    vec3 irradiance = texture(u_irradiance_cube_map, surface.normal).rgb * surface.occlusion;
+    vec3 diffuse_constant = (1.0 - specular_constant) * (1 - surface.metallic);
     vec3 diffuse = surface.albedo * irradiance;
 
-    f_color = (diffuse_constant * diffuse) + output_radiance;
+    vec3 ibl_radiance = diffuse_constant * diffuse + specular;
+
+    f_color = ibl_radiance + output_radiance;
 }

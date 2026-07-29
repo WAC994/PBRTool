@@ -4,6 +4,7 @@ in VERTEX
 {
     vec3 position;
     vec3 normal;
+    vec3 view_dir;
     vec2 texcoord;
     float material;
     mat3 tbn_matrix;

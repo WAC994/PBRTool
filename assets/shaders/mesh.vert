@@ -16,11 +16,11 @@ layout(std140, binding = TRANSFORM_UBO_BINDING_POINT) uniform ModelMatrices
     mat4 normalMatrix;
 };
 
-layout(location = 0) in vec3 a_position;
-layout(location = 1) in vec3 a_normal;
+layout(location = 4) in vec3 a_position;
+layout(location = 3) in vec3 a_normal;
 layout(location = 2) in vec3 a_tangent;
-layout(location = 3) in vec2 a_texcoord;
-layout(location = 4) in float a_material;
+layout(location = 1) in vec2 a_texcoord;
+layout(location = 0) in float a_material;
 
 out VERTEX
 {
@@ -36,6 +36,8 @@ void main()
 {
     vec4 position = transformMatrix * vec4(a_position, 1.0);
     gl_Position = camera.perspective * camera.view * position;
-    vertex.texcoord = a_texcoord;
+    vertex.position = position.xyz;
+    vertex.normal = mat3(normalMatrix) * a_normal;
     vertex.view_dir = normalize(camera.position - position.xyz);
+    vertex.texcoord = a_texcoord;
 }

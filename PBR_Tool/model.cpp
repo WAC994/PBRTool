@@ -20,15 +20,19 @@ namespace pt
         mesh.loadASSIMPModel(model);
 
         // Load Material(s)
-        for (const auto& matPair : mesh.getMaterialPairs())
+        if (loadmaterials)
         {
-            aiMaterial* aimaterial = model->mMaterials[matPair.index];
-            MaterialManager::loadMaterial(m_directory, aimaterial, matPair.id);
+            for (const auto& matPair : mesh.getMaterialPairs())
+            {
+                aiMaterial* aimaterial = model->mMaterials[matPair.index];
+                MaterialManager::loadMaterial(m_directory, aimaterial, matPair.id);
+            }
         }
     }
 
     void Model::draw()
     {
+        setMeshTransform();
         mesh.draw();
     }
 }

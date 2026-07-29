@@ -204,11 +204,6 @@ namespace pt
         levels = 1;
         
         glTextureStorage2D(cubeMap, levels, bitformat, width, height);
-        if (usemips)
-        {
-            glGenerateTextureMipmap(cubeMap);
-            glTextureParameteri(cubeMap, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
-        }
 
         storeTextureData(cubeMap, width, height, levels, bitformat);
 

@@ -5,6 +5,7 @@
 #include "PBR_Tool_Core.hpp"
 #include "framebuffer.hpp"
 #include "texture.hpp"
+#include "screen.hpp"
 
 namespace pt
 {
@@ -28,8 +29,6 @@ namespace pt
         0, 1, 2, 0, 2, 3, // Front Face +Z
         4, 5, 6, 4, 6, 7  // Back Face -Z
     };
-
-
 
     static bool cubeCreated = false;
     GLuint cubeVA, cubeVB, cubeIB;
@@ -126,6 +125,7 @@ namespace pt
         {
             glNamedBufferSubData(m_cubeProjBuffer, sizeof(glm::mat4), sizeof(glm::mat4), &m_captureViews[side]);
         }
+        Shader lutShader = Shader("assets/shaders/screen.vert", "assets/shaders/brdf_integration.frag", SHADERFILEINFO::TEXTFILE);
         FrameBuffer framebuffer;
     };
 
@@ -180,7 +180,7 @@ namespace pt
 
         // Update projection for capture
         cubeMapGenerator.updateProjection();
-        iblprefiltershader.setFloat(1, resolution);
+        iblprefiltershader.setFloat(0, resolution);
 
         for (uint32_t mipLevel = 0; mipLevel < maxLevels; mipLevel++)
         {
@@ -194,7 +194,7 @@ namespace pt
             float alpha2 = std::pow(roughness, 4.0f);
 
             // Send alpha2 to ibl prefilter shader
-            iblprefiltershader.setFloat(0, alpha2);
+            iblprefiltershader.setFloat(1, alpha2);
 
             // Draw all side of the pre-filter cube map for each roughness level
             for (uint32_t i = 0; i < 6; i++)
@@ -220,5 +220,28 @@ namespace pt
         FrameBuffer::bindDefault();
 
         return cubeMap;
+    }
+
+    uint32_t generateBRDFLUT(int resolution)
+    {
+        cubeMapGenerator.setup();
+        Screen screen;
+        uint32_t lut = gen2DTexture(resolution, resolution, GL_RG16F);
+        cubeMapGenerator.framebuffer.colorAttachment(lut, 0);
+
+        // Set viewport to resoulution
+        glViewport(0, 0, resolution, resolution);
+
+        // Draw LUT
+        cubeMapGenerator.framebuffer.bind();
+        cubeMapGenerator.lutShader.use();
+        screen.draw();
+
+        // Reset the viewport after capturing
+        glViewport(0, 0, App::getInstance().config.width, App::getInstance().config.height);
+
+        // Bind the defualt buffer so any onther glClear call doesnt affect the cube map
+        FrameBuffer::bindDefault();
+        return lut;
     }
 }
