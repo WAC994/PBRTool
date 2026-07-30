@@ -21,6 +21,7 @@ target_sources(PBR_Tool_Core PUBLIC pbr_tool_core.hpp
     render_tools.hpp)
 
 target_sources(PBR_Tool_Core PRIVATE pbr_tool_core.cpp
+    config.cpp
     vendor/glad/src/gl.c
     vendor/stb_image/stb_image.c
     texture.cpp

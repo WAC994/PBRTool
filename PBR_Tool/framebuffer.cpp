@@ -7,7 +7,7 @@ namespace pt
     {
         glCreateFramebuffers(1, &m_frameBuffer);
 
-        // Fill attachmentbuffer
+        // Fill attachment buffer
         for (uint32_t i{}; i < 32; ++i)
         {
             m_colorAttachments[i] = GL_COLOR_ATTACHMENT0 + i;

@@ -10,12 +10,12 @@ namespace pt
     static std::map<GLuint, TextureData> s_imageCache;
     static std::map<const char*, GLuint> s_imageTextureCache;
 
-    
+
     TextureData& getTextureData(uint32_t texture)
     {
         return s_imageCache[texture];
     }
-    
+
     void loadGLFWIcon(GLFWwindow* window, const std::string_view& path)
     {
         GLFWimage image;
@@ -29,15 +29,15 @@ namespace pt
         glfwSetWindowIcon(window, 1, &image);
         stbi_image_free(data);
     }
-    
-    
+
+
     enum class IF // Image format
     {
         _8,
         _16,
         _f
     };
-    
+
     struct GLTextureData
     {
         GLenum format;
@@ -45,7 +45,7 @@ namespace pt
         int channels;
         IF imageFormat;
     };
-    
+
     std::unordered_map<GLenum, GLTextureData> s_GLTextureDataMap = {
         // 8 bits per channel
         {GL_R8, GLTextureData{GL_RED, GL_UNSIGNED_BYTE, 1, IF::_8}},
@@ -75,7 +75,7 @@ namespace pt
         // 11 bits Red 11 bits green 10 bits blue
         {GL_R11F_G11F_B10F, GLTextureData{GL_RGB, GL_FLOAT, 3, IF::_f}}
     };
-    
+
     void storeTextureData(uint32_t texture, int width, int height, uint32_t levels, uint32_t bitformat)
     {
         TextureData cacheItem;
@@ -96,29 +96,29 @@ namespace pt
         int Channels;
         switch (data.imageFormat)
         {
-            case IF::_8:
+        case IF::_8:
             imageData = stbi_load(path, width, height, &Channels, data.channels);
             break;
-            case IF::_16:
+        case IF::_16:
             imageData = stbi_load_16(path, width, height, &Channels, data.channels);
             break;
-            case IF::_f:
+        case IF::_f:
             imageData = stbi_loadf(path, width, height, &Channels, data.channels);
             break;
         }
         if (imageData)
-        return imageData;
+            return imageData;
         else
         {
             std::cerr << "Error: Failed to load image from " << path << '\n';
             return nullptr;
         }
     }
-    
+
     uint32_t gen2DTextureFromFile(const std::string_view& path, uint32_t bitformat, uint32_t wrap, bool usemips, uint32_t mipmapnum)
     {
         const char* imagePath = path.data();
-        
+
         if (s_imageTextureCache.find(imagePath) == s_imageTextureCache.end())
         {
             stbi_set_flip_vertically_on_load(true);
@@ -189,20 +189,20 @@ namespace pt
         glTextureParameteri(RenderTexture, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
         return RenderTexture;
     }
-    
+
     uint32_t genCubeMapTexture(int width, int height, uint32_t bitformat, bool usemips, uint32_t mipmapnum)
     {
         uint32_t cubeMap;
         glCreateTextures(GL_TEXTURE_CUBE_MAP, 1, &cubeMap);
-        
+
         GLsizei levels = 0;
         if (usemips && mipmapnum > 0)
-        levels = mipmapnum;
+            levels = mipmapnum;
         else if (usemips)
-        levels = 1 + static_cast<GLsizei>(std::floor(std::log2(std::max(width, height))));
+            levels = 1 + static_cast<GLsizei>(std::floor(std::log2(std::max(width, height))));
         else
-        levels = 1;
-        
+            levels = 1;
+
         glTextureStorage2D(cubeMap, levels, bitformat, width, height);
 
         storeTextureData(cubeMap, width, height, levels, bitformat);

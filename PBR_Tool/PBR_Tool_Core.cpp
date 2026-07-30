@@ -17,6 +17,8 @@ namespace pt
 
     App::App() : m_firstMouse(true)
     {
+        readConfig(config);
+
         glfwInit();
         glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 4);
         glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 6);
@@ -105,6 +107,15 @@ namespace pt
                 thisWindow.runEvent(event);
             });
 
+        glfwSetScrollCallback(m_window, [](GLFWwindow* window, double xoffset, double yoffset)
+            {
+                App& thisWindow = *((App*)glfwGetWindowUserPointer(window));
+                MouseScrollEvent event;
+                event.x = xoffset;
+                event.y = yoffset;
+                thisWindow.runEvent(event);
+            });
+
         glfwSetFramebufferSizeCallback(m_window, [](GLFWwindow* window, int width, int height)
             {
                 App& thisWindow = *((App*)glfwGetWindowUserPointer(window));
@@ -163,5 +174,10 @@ namespace pt
     void App::close()
     {
         glfwSetWindowShouldClose(m_window, true);
+    }
+
+    float App::aspectRatio()
+    {
+        return static_cast<float>(config.width) / static_cast<float>(config.height);
     }
 }

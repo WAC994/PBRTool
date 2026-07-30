@@ -32,15 +32,19 @@ class PBRTest : public Scene
 
     Screen screen;
 
-    Model headphone = Model("assets/models/gravity-generator/gravity-generator.gltf");
+    Model gravity_generator = Model("assets/models/gravity-generator/gravity-generator.gltf");
+    Model M870 = Model("assets/models/M870/M870.gltf");
+    Model sphere = Model("assets/models/sphere/sphere.gltf");
+    Model headphone = Model("assets/models/headphone/headphone.gltf");
 
     Shader enviCubeMapShader = Shader("assets/shaders/cube_map_capture.vert", "assets/shaders/hdri_envi.frag", SHADERFILEINFO::TEXTFILE);
     Shader irraCubeMapShader = Shader("assets/shaders/cube_map_capture.vert", "assets/shaders/irradiance.frag", SHADERFILEINFO::TEXTFILE);
     Shader preFilterCubeMapShader = Shader("assets/shaders/cube_map_capture.vert", "assets/shaders/pre_filter.frag", SHADERFILEINFO::TEXTFILE);
-    uint32_t enviTexture = gen2DTextureFromFile("assets/images/autoshop.hdr", GL_RGB16F, GL_CLAMP_TO_EDGE, true);
+    uint32_t enviTexture = gen2DTextureFromFile("assets/images/autoshop.hdr", GL_R11F_G11F_B10F, GL_CLAMP_TO_EDGE, true);
     uint32_t enviCubeMap;
     uint32_t irraCubeMap;
     uint32_t preFilterCubeMap;
+    uint32_t preFilterLevels;
     uint32_t BRDFlut;
 
     void onStart() override
@@ -57,7 +61,7 @@ class PBRTest : public Scene
 
         // Generate the environment cube map
         enviCubeMapShader.bindTexture(0, enviTexture);
-        enviCubeMap = renderToCubeMap(1024, GL_R11F_G11F_B10F, true);
+        enviCubeMap = renderToCubeMap(512, GL_R11F_G11F_B10F, true);
 
         // Generate the irradiance cube map
         irraCubeMapShader.bindTexture(0, enviCubeMap);
@@ -65,12 +69,15 @@ class PBRTest : public Scene
 
         // Generate the prefilter environment cube map
         preFilterCubeMapShader.bindTexture(0, enviCubeMap);
-        preFilterCubeMap = renderIBLPreFilter(1024, GL_R11F_G11F_B10F, preFilterCubeMapShader);
+        preFilterCubeMap = renderIBLPreFilter(512, GL_R11F_G11F_B10F, preFilterCubeMapShader);
+        preFilterLevels = getTextureData(preFilterCubeMap).levels;
 
         // Generate BRDF lut
-        BRDFlut = generateBRDFLUT(512);
+        BRDFlut = generateBRDFLUT(256);
     }
 
+    Shader enviShader = Shader("assets/shaders/sky_box.vert", "assets/shaders/sky_box.frag", SHADERFILEINFO::TEXTFILE);
+    float scrollInput = 0.0;
     void onEvent(Event& event) override
     {
         EventManager eventManager(event);
@@ -78,6 +85,18 @@ class PBRTest : public Scene
         eventManager.dispatch<MousePositionEvent>([this](MousePositionEvent& e)
             {
                 camera.rotate(e.dx, e.dy);
+            });
+
+        eventManager.dispatch<MouseScrollEvent>([this](MouseScrollEvent& e)
+            {
+                scrollInput += e.y * 0.1f;
+
+                if (scrollInput > 1.0)
+                    scrollInput = 1.0;
+                if (scrollInput < 0.0)
+                    scrollInput = 0.0;
+
+                enviShader.setFloat(0, scrollInput);
             });
     }
 
@@ -92,29 +111,34 @@ class PBRTest : public Scene
         LightManager::update();
     }
 
-    Shader enviShader = Shader("assets/shaders/sky_box.vert", "assets/shaders/sky_box.frag", SHADERFILEINFO::TEXTFILE);
 
     void onRender() override
     {
         // G Buffer pass
         gBuffer.bind();
         gBufferShader.use();
-        BatchRenderer::batch(headphone);
+        // BatchRenderer::batch(gravity_generator);
+        // BatchRenderer::batch(M870);
+        BatchRenderer::batch(sphere);
+        // BatchRenderer::batch(headphone);
         BatchRenderer::draw();
 
         // Lighting pass
         deferredBuffer.bind();
+        // Set specular prefilter levels to shader
+        lightingShader.setUint(1, preFilterLevels);
         lightingShader.bindTextures(0, 6, gBufferTextures.data());
         lightingShader.bindTexture(6, irraCubeMap);
         lightingShader.bindTexture(7, preFilterCubeMap);
         lightingShader.bindTexture(8, BRDFlut);
-        lightingShader.setBool(0, Input::keyReleased(GLFW_KEY_O));
         screen.draw();
 
         gBuffer.blit(deferredBuffer.getHandle(), App::getInstance().config.width, App::getInstance().config.height, GL_DEPTH_BUFFER_BIT);
 
         // Forward render pass
-        enviShader.bindTexture(0, enviCubeMap);
+        enviShader.bindTexture(0, preFilterCubeMap);
+        // Set specular prefilter levels to shader for visualization
+        enviShader.setUint(1, preFilterLevels);
         glDepthFunc(GL_LEQUAL);
         drawCube(true);
         glDepthFunc(GL_LESS);

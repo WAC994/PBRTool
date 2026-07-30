@@ -56,8 +56,8 @@ namespace pt
         }
         if (aimaterial->GetTexture(aiTextureType_GLTF_METALLIC_ROUGHNESS, 0, &textureString) == AI_SUCCESS)
         {
-            material.ormsTex = genBindless2DTextureFromFile(directory + textureString.C_Str());
-            material.texFlags |= TEX_FLAG::ORMS;
+            material.ormTex = genBindless2DTextureFromFile(directory + textureString.C_Str());
+            material.texFlags |= TEX_FLAG::ORM;
         }
         if (aimaterial->GetTexture(aiTextureType_NORMALS, 0, &textureString) == AI_SUCCESS)
         {

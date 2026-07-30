@@ -19,6 +19,7 @@ namespace pt
         void run();
         GLFWwindow* getWindow() { return m_window; }
         void close();
+        float aspectRatio();
     private:
         App();
         void runEvent(Event& event);

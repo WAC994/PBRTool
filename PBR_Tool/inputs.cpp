@@ -32,4 +32,4 @@ namespace pt::Input
     {
         return glfwGetKey(window, key) == GLFW_RELEASE;
     }
-} // namespace Input
+}

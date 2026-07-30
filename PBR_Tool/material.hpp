@@ -13,15 +13,16 @@ namespace pt
     {
         constexpr uint32_t NONE = 0x0;
         constexpr uint32_t COLOR = 0x1;
-        constexpr uint32_t ORMS = 0x2;
+        constexpr uint32_t ORM = 0x2;
         constexpr uint32_t NORM = 0x4;
         constexpr uint32_t EMIT = 0x8;
+        constexpr uint32_t REFLC = 0x16;
     }
 
     struct MaterialData
     {
         GLuint64 colorTex = 0;
-        GLuint64 ormsTex = 0;
+        GLuint64 ormTex = 0;
         GLuint64 normalTex = 0;
         GLuint64 emissionTex = 0;
         glm::vec4 color = glm::vec4(0.8f, 0.8f, 0.8f, 1.0f);
@@ -29,7 +30,7 @@ namespace pt
         float occlusion = 1.0f;
         float roughness = 0.5f;
         float metallic = 0.0f;
-        float specular = 0.5f;
+        float refectance = 0.5f;
         alignas(16) uint32_t texFlags = TEX_FLAG::NONE;
     };
 

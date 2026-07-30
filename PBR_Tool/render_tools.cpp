@@ -158,6 +158,9 @@ namespace pt
         // Generate mip maps after drawing
         if (useMips)
         {
+            glTextureParameteri(cubeMap, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+            glTextureParameteri(cubeMap, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+            glTextureParameteri(cubeMap, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
             glTextureParameteri(cubeMap, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
             glGenerateTextureMipmap(cubeMap);
         }
@@ -174,7 +177,14 @@ namespace pt
 
     uint32_t renderIBLPreFilter(int resolution, uint32_t bitFormat, Shader& iblprefiltershader)
     {
-        uint32_t cubeMap = genCubeMapTexture(resolution, resolution, bitFormat, true, 6);
+        uint32_t cubeMap = genCubeMapTexture(resolution, resolution, bitFormat, true);
+
+        // IBL prefilter parameters
+        glTextureParameteri(cubeMap, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+        glTextureParameteri(cubeMap, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+        glTextureParameteri(cubeMap, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+        glTextureParameteri(cubeMap, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
+
         cubeMapGenerator.setup();
         uint32_t maxLevels = getTextureData(cubeMap).levels;
 
@@ -209,8 +219,6 @@ namespace pt
                 // Draw cube side
                 drawCubeSide(i, true);
             }
-
-            std::clog << std::format("Mip resolution: {} Linear roughness: {:.3f} Alpha squared: {:.3f}\n", mipResolution, roughness, alpha2);
         }
 
         // Reset the viewport after capturing

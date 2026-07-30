@@ -71,8 +71,11 @@ void main()
         texture(mat.emission_tex, vertex.texcoord).rgb * mat.emission.a,
         useMaterial(EMIT_FLAG, mat.tex_flags));
 
+    // If reflectance in alpha channel of the ORMR texture is 1.0 (White) use the refectance float
+    vec4 orms_tex = texture(mat.orms_tex, vertex.texcoord);
+    orms_tex = vec4(orms_tex.rgb, orms_tex.a == 1.0 ? mat.specular : orms_tex.a);
     g_orms = mix(vec4(mat.occlusion, mat.roughness, mat.metallic, mat.specular),
-        texture(mat.orms_tex, vertex.texcoord),
+        orms_tex,
         useMaterial(ORMS_FLAG, mat.tex_flags));
     
     g_position = vertex.position;

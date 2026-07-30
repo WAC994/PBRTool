@@ -1,6 +1,7 @@
 #include "camera.hpp"
 #include <glad/gl.h>
 #include <glm/gtc/matrix_transform.hpp>
+#include "PBR_Tool_Core.hpp"
 
 constexpr float CAMERA_YAW = -90.0f;
 constexpr float CAMERA_PITCH = 0.0f;
@@ -10,7 +11,12 @@ constexpr float ASPECT_16_BY_9 = 1.777f;
 namespace pt
 {
     Camera::Camera(const CameraSettings& config)
-        : CameraSettings(config), m_aspectRatio{ ASPECT_16_BY_9 }, m_yaw{ CAMERA_YAW }, m_pitch{ CAMERA_PITCH }, m_maxFieldOfView{ fieldOfView }
+        :
+        CameraSettings(config),
+        m_aspectRatio{ App::getInstance().aspectRatio() },
+        m_yaw{ CAMERA_YAW },
+        m_pitch{ CAMERA_PITCH },
+        m_maxFieldOfView{ fieldOfView }
     {
         updateVectors();
 

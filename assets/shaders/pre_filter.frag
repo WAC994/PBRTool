@@ -1,10 +1,12 @@
 #version 460 core
 
-const uint MAX_SAMPLES = 4096;
+const uint MAX_SAMPLES = 1024;
 const float PI = 3.1415926;
 const float ANGLE_360 = 2.0 * PI;
 const float ANGLE_90 = 0.5 * PI;
 
+// http://holger.dammertz.org/stuff/notes_HammersleyOnHemisphere.html
+// efficient VanDerCorpus calculation.
 float radical_inverse_Van_Der_Corput(uint bits)
 {
     bits = (bits << 16u) | (bits >> 16u);
@@ -34,6 +36,7 @@ vec3 importance_sampling_trowbridge_reitz(vec2 distribution, vec3 normal, float 
     vec3 up        = abs(normal.z) < 0.999 ? vec3(0.0, 0.0, 1.0) : vec3(1.0, 0.0, 0.0);
     vec3 tangent   = normalize(cross(up, normal));
     vec3 bitangent = cross(normal, tangent);
+
 
     return normalize(mat3(tangent, bitangent, normal) * halfway_dir);
 }
@@ -73,14 +76,14 @@ void main()
         {
             float ndoth = max(dot(normal, halfway_dir), 0.0);
             float normal_distribution = trowbridge_reitz_ggx(ndoth, u_alpha2);
-            float probability_distribution_function = (normal_distribution * ndoth / (4.0 * vdoth)) + 1e-4;
+            float probability_distribution_function = (normal_distribution * ndoth / (4.0 * max(vdoth, 0.0))) + 1e-4;
             
-            float mip_texel = 4.0 * PI / (6.0 * pow(u_resolution, 2.0));
-            float mip_sample = 1.0 / (float(MAX_SAMPLES) * probability_distribution_function + 1e-5);
+            float mip_texel = 4.0 * PI / (6.0 * u_resolution * u_resolution);
+            float mip_sample = 1.0 / (float(MAX_SAMPLES) * probability_distribution_function + 1e-4);
 
             float mipLevel = u_alpha2 == 0.0 ? 0.0 : 0.5 * log2(mip_sample / mip_texel); 
 
-            pre_filter += texture(u_envi_cube_map, light_dir, mipLevel).rgb * ndotl;
+            pre_filter += textureLod(u_envi_cube_map, light_dir, mipLevel).rgb * ndotl;
             total_weight += ndotl;
         }
     }
