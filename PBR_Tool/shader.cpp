@@ -233,7 +233,7 @@ namespace pt
         glProgramUniform4f(m_programID, getNamedUniformLocation(name), v0, v1, v2, v3);
     }
 
-    void Shader::SetNamedVec2(const std::string_view& name, const glm::vec2& value, int32_t count)
+    void Shader::setNamedVec2(const std::string_view& name, const glm::vec2& value, int32_t count)
     {
         glProgramUniform2fv(m_programID, getNamedUniformLocation(name), count, glm::value_ptr(value));
     }

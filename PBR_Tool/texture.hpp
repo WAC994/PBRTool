@@ -10,13 +10,13 @@ namespace pt
 {
     struct TextureData
     {
-        uint32_t width;
-        uint32_t height;
-        uint32_t channels;
-        uint32_t levels;
-        GLenum bitformat;
-        GLenum format;
-        GLenum dataType;
+        uint32_t width = 512;
+        uint32_t height = 512;
+        uint32_t channels = 3;
+        uint32_t levels = 1;
+        GLenum bitformat = GL_RGB8;
+        GLenum format = GL_RGB;
+        GLenum dataType = GL_UNSIGNED_BYTE;
     };
     TextureData& getTextureData(uint32_t texture);
     void loadGLFWIcon(GLFWwindow* window, const std::string_view& path);

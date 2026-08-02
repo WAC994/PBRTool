@@ -4,8 +4,6 @@
 #include <iostream>
 #include "PBR_Tool_Core.hpp"
 #include "framebuffer.hpp"
-#include "texture.hpp"
-#include "screen.hpp"
 
 namespace pt
 {
@@ -90,7 +88,7 @@ namespace pt
             glEnable(GL_CULL_FACE);
     }
 
-    class CubeMapGenImpl
+    class RenderTools
     {
     private:
         uint32_t m_cubeProjBuffer;
@@ -127,29 +125,30 @@ namespace pt
         }
         Shader lutShader = Shader("assets/shaders/screen.vert", "assets/shaders/brdf_integration.frag", SHADERFILEINFO::TEXTFILE);
         FrameBuffer framebuffer;
+        Screen screen;
     };
 
-    static CubeMapGenImpl cubeMapGenerator;
+    static RenderTools tools;
 
     uint32_t renderToCubeMap(int resolution, uint32_t bitFormat, bool useMips, uint32_t mipMapNum)
     {
         uint32_t cubeMap = genCubeMapTexture(resolution, resolution, bitFormat, useMips, mipMapNum);
-        cubeMapGenerator.setup();
+        tools.setup();
 
         // Set the viewport to the resolution
         glViewport(0, 0, resolution, resolution);
 
         // Update projection for capture
-        cubeMapGenerator.updateProjection();
+        tools.updateProjection();
 
         for (uint32_t i = 0; i < 6; i++)
         {
             // Upate view of each cube side
-            cubeMapGenerator.updateView(i);
+            tools.updateView(i);
 
             // Attach and bind the framebuffer cube map side to capture to
-            cubeMapGenerator.framebuffer.cubeMapAttachment(cubeMap, 0, i);
-            cubeMapGenerator.framebuffer.bind();
+            tools.framebuffer.cubeMapAttachment(cubeMap, 0, i);
+            tools.framebuffer.bind();
 
             // Draw cube side
             drawCubeSide(i, true);
@@ -185,11 +184,11 @@ namespace pt
         glTextureParameteri(cubeMap, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
         glTextureParameteri(cubeMap, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
 
-        cubeMapGenerator.setup();
+        tools.setup();
         uint32_t maxLevels = getTextureData(cubeMap).levels;
 
         // Update projection for capture
-        cubeMapGenerator.updateProjection();
+        tools.updateProjection();
         iblprefiltershader.setFloat(0, resolution);
 
         for (uint32_t mipLevel = 0; mipLevel < maxLevels; mipLevel++)
@@ -210,11 +209,11 @@ namespace pt
             for (uint32_t i = 0; i < 6; i++)
             {
                 // Upate view of each cube side
-                cubeMapGenerator.updateView(i);
+                tools.updateView(i);
 
                 // Attach and bind the framebuffer cube map side to capture to
-                cubeMapGenerator.framebuffer.cubeMapAttachment(cubeMap, 0, i, mipLevel);
-                cubeMapGenerator.framebuffer.bind();
+                tools.framebuffer.cubeMapAttachment(cubeMap, 0, i, mipLevel);
+                tools.framebuffer.bind();
 
                 // Draw cube side
                 drawCubeSide(i, true);
@@ -232,18 +231,17 @@ namespace pt
 
     uint32_t generateBRDFLUT(int resolution)
     {
-        cubeMapGenerator.setup();
-        Screen screen;
+        tools.setup();
         uint32_t lut = gen2DTexture(resolution, resolution, GL_RG16F);
-        cubeMapGenerator.framebuffer.colorAttachment(lut, 0);
+        tools.framebuffer.colorAttachment(lut, 0);
 
         // Set viewport to resoulution
         glViewport(0, 0, resolution, resolution);
 
         // Draw LUT
-        cubeMapGenerator.framebuffer.bind();
-        cubeMapGenerator.lutShader.use();
-        screen.draw();
+        tools.framebuffer.bind();
+        tools.lutShader.use();
+        tools.screen.draw();
 
         // Reset the viewport after capturing
         glViewport(0, 0, App::getInstance().config.width, App::getInstance().config.height);
@@ -251,5 +249,70 @@ namespace pt
         // Bind the defualt buffer so any onther glClear call doesnt affect the cube map
         FrameBuffer::bindDefault();
         return lut;
+    }
+
+    Bloom::Bloom()
+    {
+        m_downSample.addShader(ShaderType::VERT, "assets/shaders/screen.vert", SHADERFILEINFO::TEXTFILE);
+        m_downSample.addShader(ShaderType::FRAG, "assets/shaders/bloom_down_sample.frag", SHADERFILEINFO::TEXTFILE);
+        m_downSample.linkProgram();
+        m_upSample.addShader(ShaderType::VERT, "assets/shaders/screen.vert", SHADERFILEINFO::TEXTFILE);
+        m_upSample.addShader(ShaderType::FRAG, "assets/shaders/bloom_up_sample.frag", SHADERFILEINFO::TEXTFILE);
+        m_upSample.linkProgram();
+        glCreateFramebuffers(1, &m_frameBuf);
+    }
+
+    GLuint Bloom::output(GLuint hdr)
+    {
+        auto& hdrDataNew = getTextureData(hdr);
+        if ((m_hdrData.width != hdrDataNew.width) && (m_hdrData.height != hdrDataNew.height))
+        {
+            m_hdrData = hdrDataNew;
+        }
+
+        m_sampleRes = glm::vec2(m_hdrData.width, m_hdrData.height);
+        m_drawRes = m_sampleRes / 2.0f;
+
+        if (!m_texCreated)
+        {
+            m_downTex = gen2DTexture(static_cast<int32_t>(m_drawRes.x), static_cast<int32_t>(m_drawRes.y), GL_R11F_G11F_B10F, GL_CLAMP_TO_EDGE, GL_LINEAR, true, m_samples);
+            m_upTex = gen2DTexture(static_cast<int32_t>(m_drawRes.x), static_cast<int32_t>(m_drawRes.y), GL_R11F_G11F_B10F, GL_CLAMP_TO_EDGE, GL_LINEAR, true, m_samples);
+            m_texCreated = true;
+        }
+
+        // Downsample from the hdr texture to the down sample texture mips with a Kawase filter
+        bindFramebuffer(m_frameBuf);
+        for (uint32_t i = 0U; i < m_samples; i++)
+        {
+            glViewport(0, 0, static_cast<int32_t>(m_drawRes.x), static_cast<int32_t>(m_drawRes.y));
+            glNamedFramebufferTexture(m_frameBuf, GL_COLOR_ATTACHMENT0, m_downTex, i);
+            m_downSample.bindTexture(0, (i == 0) ? hdr : m_downTex);
+            m_downSample.setNamedFloat("u_lod", (i == 0) ? 0.0f : static_cast<float>(i - 1));
+            m_downSample.setNamedVec2("u_texel", 1.0f / m_sampleRes);
+            m_screen.draw();
+            m_drawRes /= 2.0f;
+            m_sampleRes /= 2.0f;
+        }
+
+        // blur and sum to upsample texture
+        uint32_t levels = m_samples - 1; 
+        for (int32_t i = levels; i >= 0; i--)
+        {
+            m_drawRes *= 2.0f;
+            glViewport(0, 0, static_cast<int32_t>(m_drawRes.x), static_cast<int32_t>(m_drawRes.y));
+            glNamedFramebufferTexture(m_frameBuf, GL_COLOR_ATTACHMENT0, m_upTex, i);
+            m_upSample.bindTexture(0, m_downTex);
+            m_upSample.bindTexture(1, m_upTex);
+            m_upSample.setNamedFloat("u_blur_lod", static_cast<float>(i));
+            m_upSample.setNamedFloat("u_add_lod", static_cast<float>(i + 1));
+            m_upSample.setNamedFloat("u_block_add", (i == levels) ? 0.0f : 1.0f);
+            m_screen.draw();
+        }
+
+        // Reset the viewport and bind defaut framebuffer after capturing
+        glViewport(0, 0, App::getInstance().config.width, App::getInstance().config.height);
+        FrameBuffer::bindDefault();
+
+        return m_upTex;
     }
 }

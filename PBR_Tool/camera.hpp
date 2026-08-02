@@ -4,26 +4,16 @@
 
 namespace pt
 {
-    struct CameraSettings
-    {
-        glm::vec3 position = { 0.0f, 0.0f, 2.0f };
-        float fieldOfView = 55.0f;
-        float nearPlane = 0.01f;
-        float farPlane = 100.0f;
-        float speed = 1.0f;
-        float sensitivity = 0.05f;
-    };
-
     struct CameraData
     {
         glm::mat4 perspective, view;
         glm::vec3 position;
     };
 
-    class Camera : public CameraSettings
+    class Camera
     {
     public:
-        Camera(const CameraSettings& config = {});
+        Camera();
         ~Camera();
         void move(const glm::vec2& input, float deltaTime);
         void rotate(float inputX, float inputY);
@@ -35,6 +25,13 @@ namespace pt
         void update();
     private:
         void updateVectors();
+    public:
+        glm::vec3 position = glm::vec3(0.0f, 0.0f, 2.0f);
+        float fieldOfView = 55.0f;
+        float nearPlane = 0.01f;
+        float farPlane = 100.0f;
+        float speed = 1.0f;
+        float sensitivity = 0.05f;
     private:
         glm::vec3 m_front, m_right, m_up;
         float m_aspectRatio, m_yaw, m_pitch, m_maxFieldOfView;

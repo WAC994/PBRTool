@@ -59,7 +59,7 @@ namespace pt
     void setNamedFloat2(const std::string_view& name, float v0, float v1);
     void setNamedFloat3(const std::string_view& name, float v0, float v1, float v2);
     void setNamedFloat4(const std::string_view& name, float v0, float v1, float v2, float v3);
-    void SetNamedVec2(const std::string_view& name, const glm::vec2& value, int32_t count = 1);
+    void setNamedVec2(const std::string_view& name, const glm::vec2& value, int32_t count = 1);
     void setNamedVec3(const std::string_view& name, const glm::vec3& value, int32_t count = 1);
     void setNamedVec4(const std::string_view& name, const glm::vec4& value, int32_t count = 1);
     void setNamedMat2(const std::string_view& name, const glm::mat2& value, int32_t count = 1);

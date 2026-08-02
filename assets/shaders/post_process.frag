@@ -1,10 +1,14 @@
 #version 460 core
 
+const float BLOOM_FACTOR = 0.04;
+
 layout(location = 0) in vec2 v_texCoord;
 
 layout(location = 0) out vec4 f_color;
 
-layout(binding = 0) uniform sampler2D u_texture;
+layout(binding = 0) uniform sampler2D u_hdr_texture;
+layout(binding = 1) uniform sampler2D u_bloom_texture;
+
 
 vec3 ACES_tone_mapper(vec3 color) 
 {
@@ -28,8 +32,8 @@ vec3 reinhard_luminance(vec3 color) {
 
 vec4 color_correction(vec3 color)
 {
-    // color = ACES_tone_mapper(color);
-    color = reinhard_luminance(color);
+    color = ACES_tone_mapper(color);
+    // color = reinhard_luminance(color);
     vec3 lowValue = color * 12.92;
     precise vec3 highValue = fma(vec3(1.055), pow(color, vec3(0.41666)), vec3(-0.055));
     color = mix(lowValue, highValue, greaterThan(color, vec3(0.0031308)));
@@ -38,5 +42,8 @@ vec4 color_correction(vec3 color)
 
 void main()
 {
-   f_color = color_correction(texture(u_texture, v_texCoord).rgb);
+    vec3 color = texture(u_hdr_texture, v_texCoord).rgb;
+    vec3 bloom = texture(u_bloom_texture, v_texCoord).rgb;
+
+    f_color = color_correction(mix(color, bloom, BLOOM_FACTOR));
 }

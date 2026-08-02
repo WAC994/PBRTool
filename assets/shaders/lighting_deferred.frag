@@ -125,7 +125,7 @@ void main()
     surface.view_dir = texture(g_view_dir, v_texcoord).xyz;
     vec4 orms = texture(g_orms, v_texcoord);
     surface.occlusion = orms.r;
-    surface.roughness = orms.g;
+    surface.roughness = pow(orms.g, 1.0 / 1.2);
     surface.alpha = pow(surface.roughness, 2.0);
     surface.alpha2 = pow(surface.alpha, 2.0);
     surface.metallic = orms.b;

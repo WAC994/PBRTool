@@ -10,9 +10,8 @@ constexpr float ASPECT_16_BY_9 = 1.777f;
 
 namespace pt
 {
-    Camera::Camera(const CameraSettings& config)
+    Camera::Camera()
         :
-        CameraSettings(config),
         m_aspectRatio{ App::getInstance().aspectRatio() },
         m_yaw{ CAMERA_YAW },
         m_pitch{ CAMERA_PITCH },
