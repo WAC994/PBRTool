@@ -1,8 +1,11 @@
 {
 	"asset":{
-		"generator":"Khronos glTF Blender I/O v5.1.18",
+		"generator":"Khronos glTF Blender I/O v5.1.20",
 		"version":"2.0"
 	},
+	"extensionsUsed":[
+		"KHR_materials_emissive_strength"
+	],
 	"scene":0,
 	"scenes":[
 		{
@@ -28,6 +31,11 @@
 			],
 			"emissiveTexture":{
 				"index":0
+			},
+			"extensions":{
+				"KHR_materials_emissive_strength":{
+					"emissiveStrength":2.5
+				}
 			},
 			"name":"gravity_generator_mat",
 			"normalTexture":{
@@ -106,7 +114,7 @@
 		{
 			"bufferView":0,
 			"componentType":5126,
-			"count":13528,
+			"count":13550,
 			"max":[
 				1.0489072799682617,
 				0.6017190217971802,
@@ -122,13 +130,13 @@
 		{
 			"bufferView":1,
 			"componentType":5126,
-			"count":13528,
+			"count":13550,
 			"type":"VEC3"
 		},
 		{
 			"bufferView":2,
 			"componentType":5126,
-			"count":13528,
+			"count":13550,
 			"type":"VEC2"
 		},
 		{
@@ -141,26 +149,26 @@
 	"bufferViews":[
 		{
 			"buffer":0,
-			"byteLength":162336,
+			"byteLength":162600,
 			"byteOffset":0,
 			"target":34962
 		},
 		{
 			"buffer":0,
-			"byteLength":162336,
-			"byteOffset":162336,
+			"byteLength":162600,
+			"byteOffset":162600,
 			"target":34962
 		},
 		{
 			"buffer":0,
-			"byteLength":108224,
-			"byteOffset":324672,
+			"byteLength":108400,
+			"byteOffset":325200,
 			"target":34962
 		},
 		{
 			"buffer":0,
 			"byteLength":79356,
-			"byteOffset":432896,
+			"byteOffset":433600,
 			"target":34963
 		}
 	],
@@ -172,7 +180,7 @@
 	],
 	"buffers":[
 		{
-			"byteLength":512252,
+			"byteLength":512956,
 			"uri":"gravity-generator.bin"
 		}
 	]

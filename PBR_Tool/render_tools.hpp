@@ -13,7 +13,6 @@ namespace pt
     uint32_t renderToCubeMap(int resolution, uint32_t bitFormat, bool useMips = false, uint32_t mipMapNum = 0);
     uint32_t renderIBLPreFilter(int resolution, uint32_t bitFormat, Shader& iblprefiltershader);
     uint32_t generateBRDFLUT(int resolution);
-    GLuint bloomFilter(GLuint hdrtexture);
 
     class Bloom
     {
@@ -21,12 +20,12 @@ namespace pt
         Bloom();
         GLuint output(GLuint hdr);
     private:
+        static constexpr uint32_t s_samples = 5U;
         Shader m_downSample, m_upSample;
         Screen m_screen;
         TextureData m_hdrData;
-        glm::vec2 m_sampleRes, m_drawRes;
+        glm::vec2 m_res[s_samples];
         GLuint m_frameBuf, m_downTex, m_upTex;
-        uint32_t m_samples = 5U;
-        bool m_texCreated = false;
+        bool m_resChanged = true;
     };
 }

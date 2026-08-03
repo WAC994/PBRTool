@@ -164,10 +164,8 @@ namespace pt
             glGenerateTextureMipmap(cubeMap);
         }
 
-        // Reset the viewport after capturing
+        // Reset the viewport and bind defaut framebuffer after capturing
         glViewport(0, 0, App::getInstance().config.width, App::getInstance().config.height);
-
-        // Bind the defualt buffer so any onther glClear call doesnt affect the cube map
         FrameBuffer::bindDefault();
 
         // Return the filled cube map
@@ -220,10 +218,8 @@ namespace pt
             }
         }
 
-        // Reset the viewport after capturing
+        // Reset the viewport and bind defaut framebuffer after capturing
         glViewport(0, 0, App::getInstance().config.width, App::getInstance().config.height);
-
-        // Bind the defualt buffer so any onther glClear call doesnt affect the cube map
         FrameBuffer::bindDefault();
 
         return cubeMap;
@@ -243,11 +239,10 @@ namespace pt
         tools.lutShader.use();
         tools.screen.draw();
 
-        // Reset the viewport after capturing
+        // Reset the viewport and bind defaut framebuffer after capturing
         glViewport(0, 0, App::getInstance().config.width, App::getInstance().config.height);
-
-        // Bind the defualt buffer so any onther glClear call doesnt affect the cube map
         FrameBuffer::bindDefault();
+
         return lut;
     }
 
@@ -265,47 +260,52 @@ namespace pt
     GLuint Bloom::output(GLuint hdr)
     {
         auto& hdrDataNew = getTextureData(hdr);
+        uint32_t lods = s_samples - 1;
+        glm::vec2 bloomRes;
+
         if ((m_hdrData.width != hdrDataNew.width) && (m_hdrData.height != hdrDataNew.height))
         {
             m_hdrData = hdrDataNew;
+            bloomRes = glm::vec2(m_hdrData.width, m_hdrData.height) / 2.0f;
+
+            for (int32_t i = lods; i >= 0; i--)
+            {
+                m_res[i] = bloomRes / static_cast<float>(1 << i);
+                std::cout << std::format("Bloom resolutions =  Mip:({}) | {} x {}\n", i, m_res[i].x, m_res[i].y);
+            }
+            m_resChanged = true;
         }
 
-        m_sampleRes = glm::vec2(m_hdrData.width, m_hdrData.height);
-        m_drawRes = m_sampleRes / 2.0f;
-
-        if (!m_texCreated)
+        if (m_resChanged)
         {
-            m_downTex = gen2DTexture(static_cast<int32_t>(m_drawRes.x), static_cast<int32_t>(m_drawRes.y), GL_R11F_G11F_B10F, GL_CLAMP_TO_EDGE, GL_LINEAR, true, m_samples);
-            m_upTex = gen2DTexture(static_cast<int32_t>(m_drawRes.x), static_cast<int32_t>(m_drawRes.y), GL_R11F_G11F_B10F, GL_CLAMP_TO_EDGE, GL_LINEAR, true, m_samples);
-            m_texCreated = true;
+            m_downTex = gen2DTexture(static_cast<int32_t>(bloomRes.x), static_cast<int32_t>(bloomRes.y), GL_R11F_G11F_B10F, GL_CLAMP_TO_EDGE, GL_LINEAR, true, s_samples);
+            m_upTex = gen2DTexture(static_cast<int32_t>(bloomRes.x), static_cast<int32_t>(bloomRes.y), GL_R11F_G11F_B10F, GL_CLAMP_TO_EDGE, GL_LINEAR, true, s_samples);
+            m_resChanged = false;
         }
 
-        // Downsample from the hdr texture to the down sample texture mips with a Kawase filter
         bindFramebuffer(m_frameBuf);
-        for (uint32_t i = 0U; i < m_samples; i++)
+        
+        // Downsample from the hdr texture to the down sample texture mips with a Kawase filter
+        for (uint32_t i = 0U; i < s_samples; i++)
         {
-            glViewport(0, 0, static_cast<int32_t>(m_drawRes.x), static_cast<int32_t>(m_drawRes.y));
+            glViewport(0, 0, static_cast<int32_t>(m_res[i].x), static_cast<int32_t>(m_res[i].y));
             glNamedFramebufferTexture(m_frameBuf, GL_COLOR_ATTACHMENT0, m_downTex, i);
             m_downSample.bindTexture(0, (i == 0) ? hdr : m_downTex);
             m_downSample.setNamedFloat("u_lod", (i == 0) ? 0.0f : static_cast<float>(i - 1));
-            m_downSample.setNamedVec2("u_texel", 1.0f / m_sampleRes);
+            m_downSample.setNamedVec2("u_texel", 1.0f / (m_res[i] * 2.0f));
             m_screen.draw();
-            m_drawRes /= 2.0f;
-            m_sampleRes /= 2.0f;
         }
 
         // blur and sum to upsample texture
-        uint32_t levels = m_samples - 1; 
-        for (int32_t i = levels; i >= 0; i--)
+        for (int32_t i = lods; i >= 0; i--)
         {
-            m_drawRes *= 2.0f;
-            glViewport(0, 0, static_cast<int32_t>(m_drawRes.x), static_cast<int32_t>(m_drawRes.y));
+            glViewport(0, 0, static_cast<int32_t>(m_res[i].x), static_cast<int32_t>(m_res[i].y));
             glNamedFramebufferTexture(m_frameBuf, GL_COLOR_ATTACHMENT0, m_upTex, i);
             m_upSample.bindTexture(0, m_downTex);
             m_upSample.bindTexture(1, m_upTex);
             m_upSample.setNamedFloat("u_blur_lod", static_cast<float>(i));
             m_upSample.setNamedFloat("u_add_lod", static_cast<float>(i + 1));
-            m_upSample.setNamedFloat("u_block_add", (i == levels) ? 0.0f : 1.0f);
+            m_upSample.setNamedFloat("u_block_add", (i == lods) ? 0.0f : 1.0f);
             m_screen.draw();
         }
 

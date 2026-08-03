@@ -44,7 +44,7 @@ vec3 down_sample(sampler2D tex, vec2 uv, vec2 texel, float lod)
     down_sample += (a + c + g + i) * 0.03125;
     down_sample += (b + d + f + h) * 0.0625;
     down_sample += (j + k + l + m) * 0.125;
-    return down_sample;
+    return max(down_sample, 1e-5);
 }
 
 void main()

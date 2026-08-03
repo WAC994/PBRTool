@@ -35,14 +35,20 @@ class PBRTest : public Scene
     Model gravity_generator = Model("assets/models/gravity-generator/gravity-generator.gltf");
 
     Shader enviCubeMapShader = Shader("assets/shaders/cube_map_capture.vert", "assets/shaders/hdri_envi.frag", SHADERFILEINFO::TEXTFILE);
+    Shader enviShader = Shader("assets/shaders/sky_box.vert", "assets/shaders/sky_box.frag", SHADERFILEINFO::TEXTFILE);
     Shader irraCubeMapShader = Shader("assets/shaders/cube_map_capture.vert", "assets/shaders/irradiance.frag", SHADERFILEINFO::TEXTFILE);
     Shader preFilterCubeMapShader = Shader("assets/shaders/cube_map_capture.vert", "assets/shaders/pre_filter.frag", SHADERFILEINFO::TEXTFILE);
-    uint32_t enviTexture = gen2DTextureFromFile("assets/images/autoshop.hdr", GL_R11F_G11F_B10F, GL_CLAMP_TO_EDGE, true);
+    
+    uint32_t enviTexture = gen2DTextureFromFile("assets/images/concrete_studio_at_night_8k.hdr", GL_R11F_G11F_B10F, GL_CLAMP_TO_EDGE, true);
     uint32_t enviCubeMap;
     uint32_t irraCubeMap;
     uint32_t preFilterCubeMap;
     uint32_t preFilterLevels;
     uint32_t BRDFlut;
+    
+    BatchRender batchRenderer;
+    Bloom bloomFilter;
+    uint32_t bloomTexture;
 
     void onStart() override
     {
@@ -57,7 +63,7 @@ class PBRTest : public Scene
 
         // Generate the environment cube map
         enviCubeMapShader.bindTexture(0, enviTexture);
-        enviCubeMap = renderToCubeMap(512, GL_R11F_G11F_B10F, true);
+        enviCubeMap = renderToCubeMap(1024, GL_R11F_G11F_B10F, true);
 
         // Generate the irradiance cube map
         irraCubeMapShader.bindTexture(0, enviCubeMap);
@@ -72,8 +78,6 @@ class PBRTest : public Scene
         BRDFlut = generateBRDFLUT(256);
     }
 
-    Shader enviShader = Shader("assets/shaders/sky_box.vert", "assets/shaders/sky_box.frag", SHADERFILEINFO::TEXTFILE);
-    float scrollInput = 0.0;
     void onEvent(Event& event) override
     {
         EventManager eventManager(event);
@@ -81,18 +85,6 @@ class PBRTest : public Scene
         eventManager.dispatch<MousePositionEvent>([this](MousePositionEvent& e)
             {
                 camera.rotate(e.dx, e.dy);
-            });
-
-        eventManager.dispatch<MouseScrollEvent>([this](MouseScrollEvent& e)
-            {
-                scrollInput += e.y * 0.1f;
-
-                if (scrollInput > 1.0)
-                    scrollInput = 1.0;
-                if (scrollInput < 0.0)
-                    scrollInput = 0.0;
-
-                enviShader.setFloat(0, scrollInput);
             });
     }
 
@@ -103,13 +95,12 @@ class PBRTest : public Scene
         Light bulb1(glm::vec3(20.0f, 20.0f, 18.0f), glm::vec3(2.0f, 2.5f, 2.0f));
         Light bulb2(glm::vec3(5.0f, 1.0f, 0.0f), glm::vec3(-2.0f, 0.0f, -2.0f));
 
+        batchRenderer.batch(gravity_generator);
+
         MaterialManager::update();
         LightManager::update();
     }
 
-    BatchRender renderer;
-    Bloom filter;
-    uint32_t bloom;
 
     void onRender() override
     {
@@ -118,8 +109,7 @@ class PBRTest : public Scene
         gBufferShader.use();
 
         // Draw model
-        renderer.batch(gravity_generator);
-        renderer.draw();
+        batchRenderer.draw();
 
         // Lighting pass
         deferredBuffer.bind();
@@ -134,19 +124,16 @@ class PBRTest : public Scene
         gBuffer.blit(deferredBuffer.getHandle(), App::getInstance().config.width, App::getInstance().config.height, GL_DEPTH_BUFFER_BIT);
 
         // Forward render pass
-        enviShader.bindTexture(0, preFilterCubeMap);
-        // Set specular prefilter levels to shader for visualization
-        enviShader.setUint(1, preFilterLevels);
+        enviShader.bindTexture(0, enviCubeMap);
         glDepthFunc(GL_LEQUAL);
         drawCube(true);
         glDepthFunc(GL_LESS);
 
-        bloom = filter.output(deferredTarget);
-
         // Post-process pass
+        bloomTexture = bloomFilter.output(deferredTarget);
         FrameBuffer::bindDefault();
         postProcessShader.bindTexture(0, deferredTarget);
-        postProcessShader.bindTexture(1, bloom);
+        postProcessShader.bindTexture(1, bloomTexture);
         screen.draw();
     }
 };
