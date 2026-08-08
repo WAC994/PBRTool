@@ -271,7 +271,6 @@ namespace pt
             for (int32_t i = lods; i >= 0; i--)
             {
                 m_res[i] = bloomRes / static_cast<float>(1 << i);
-                std::cout << std::format("Bloom resolutions =  Mip:({}) | {} x {}\n", i, m_res[i].x, m_res[i].y);
             }
             m_resChanged = true;
         }
