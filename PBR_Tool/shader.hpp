@@ -54,6 +54,7 @@ namespace pt
 
 
     void setNamedInt(const std::string_view& name, int32_t v0);
+    void setNamedBool(const std::string_view& name, bool value);
     void setNamedUint(const std::string_view& name, uint32_t v0);
     void setNamedFloat(const std::string_view& name, float v0);
     void setNamedFloat2(const std::string_view& name, float v0, float v1);

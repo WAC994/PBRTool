@@ -20,7 +20,7 @@ namespace pt
         Bloom();
         GLuint output(GLuint hdr);
     private:
-        static constexpr uint32_t s_samples = 5U;
+        static constexpr uint32_t s_samples = 7U;
         Shader m_downSample, m_upSample;
         Screen m_screen;
         TextureData m_hdrData;

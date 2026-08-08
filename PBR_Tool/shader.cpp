@@ -208,6 +208,11 @@ namespace pt
         glProgramUniform1i(m_programID, getNamedUniformLocation(name), v0);
     }
 
+    void Shader::setNamedBool(const std::string_view& name, bool value)
+    {
+        glProgramUniform1ui(m_programID, getNamedUniformLocation(name), static_cast<uint32_t>(value));
+    }
+
     void Shader::setNamedUint(const std::string_view& name, uint32_t v0)
     {
         glProgramUniform1ui(m_programID, getNamedUniformLocation(name), v0);

@@ -263,7 +263,7 @@ namespace pt
         uint32_t lods = s_samples - 1;
         glm::vec2 bloomRes;
 
-        if ((m_hdrData.width != hdrDataNew.width) && (m_hdrData.height != hdrDataNew.height))
+        if ((m_hdrData.width != hdrDataNew.width) || (m_hdrData.height != hdrDataNew.height))
         {
             m_hdrData = hdrDataNew;
             bloomRes = glm::vec2(m_hdrData.width, m_hdrData.height) / 2.0f;
@@ -293,6 +293,7 @@ namespace pt
             m_downSample.bindTexture(0, (i == 0) ? hdr : m_downTex);
             m_downSample.setNamedFloat("u_lod", (i == 0) ? 0.0f : static_cast<float>(i - 1));
             m_downSample.setNamedVec2("u_texel", 1.0f / (m_res[i] * 2.0f));
+            m_downSample.setNamedBool("u_karis_avg", i == 1);
             m_screen.draw();
         }
 
