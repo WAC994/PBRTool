@@ -29,7 +29,7 @@ layout(std430, binding = MATERIAL_SSBO_BINDING_POINT) readonly buffer Materials
     MaterialData materials[];
 };
 
-in VERTEX
+layout(location = 0) in VERTEX
 {
     vec3 position;
     vec3 normal;

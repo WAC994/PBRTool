@@ -22,7 +22,7 @@ layout(location = 2) in vec3 a_tangent;
 layout(location = 1) in vec2 a_texcoord;
 layout(location = 0) in float a_material;
 
-out VERTEX
+layout(location = 0) out VERTEX
 {
     vec3 position;
     vec3 normal;
@@ -39,5 +39,16 @@ void main()
     vertex.position = position.xyz;
     vertex.normal = mat3(normalMatrix) * a_normal;
     vertex.view_dir = normalize(camera.position - position.xyz);
+
+    // Calculate normal, tangent, bitangent
+    vertex.normal = normalize(mat3(normalMatrix) * a_normal);
+    vec3 tangent = mat3(normalMatrix) * a_tangent;
+    tangent = normalize(tangent - dot(tangent, vertex.normal) * vertex.normal);
+    vec3 bitangent = cross(vertex.normal, tangent);
+
     vertex.texcoord = a_texcoord;
+
+    vertex.material = a_material;
+
+    vertex.tbn_matrix = mat3(tangent, bitangent, vertex.normal);
 }

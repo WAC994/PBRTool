@@ -27,7 +27,7 @@ layout(location = 2) in vec3 a_tangent;
 layout(location = 1) in vec2 a_texcoord;
 layout(location = 0) in float a_material;
 
-out VERTEX
+layout(location = 0) out VERTEX
 {
     vec3 position;
     vec3 normal;

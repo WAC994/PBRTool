@@ -1,12 +1,12 @@
 #version 460 core
 
-in VERTEX
+layout(location = 0) in VERTEX
 {
     vec3 position;
     vec3 normal;
     vec3 view_dir;
     vec2 texcoord;
-    float material;
+    flat float material;
     mat3 tbn_matrix;
 }vertex;
 

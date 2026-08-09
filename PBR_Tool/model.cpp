@@ -32,7 +32,7 @@ namespace pt
 
     void Model::draw()
     {
-        setMeshTransform();
+        setMeshTransform(transform);
         mesh.draw();
     }
 }
