@@ -32,14 +32,14 @@ class PBRTest : public Scene
 
     Screen screen;
 
-    Model gravity_generator = Model("assets/models/gravity-generator/gravity-generator.gltf");
+    Model headphone = Model("assets/models/headphone/headphone.gltf");
 
     Shader enviCubeMapShader = Shader("assets/shaders/cube_map_capture.vert", "assets/shaders/hdri_envi.frag", SHADERFILEINFO::TEXTFILE);
     Shader enviShader = Shader("assets/shaders/sky_box.vert", "assets/shaders/sky_box.frag", SHADERFILEINFO::TEXTFILE);
     Shader irraCubeMapShader = Shader("assets/shaders/cube_map_capture.vert", "assets/shaders/irradiance.frag", SHADERFILEINFO::TEXTFILE);
     Shader preFilterCubeMapShader = Shader("assets/shaders/cube_map_capture.vert", "assets/shaders/pre_filter.frag", SHADERFILEINFO::TEXTFILE);
     
-    uint32_t enviTexture = gen2DTextureFromFile("assets/images/brown_photostudio.hdr", GL_R11F_G11F_B10F, GL_CLAMP_TO_EDGE, true);
+    uint32_t enviTexture = gen2DTextureFromFile("assets/images/concrete_studio_at_night_8k.hdr", GL_R11F_G11F_B10F, GL_CLAMP_TO_EDGE, true);
     uint32_t enviCubeMap;
     uint32_t irraCubeMap;
     uint32_t preFilterCubeMap;
@@ -92,7 +92,7 @@ class PBRTest : public Scene
     {
         camera.move(Input::axis2D(), deltaTime);
 
-        batchRenderer.batch(gravity_generator);
+        batchRenderer.batch(headphone);
 
         MaterialManager::update();
     }
