@@ -32,7 +32,7 @@ class PBRTest : public Scene
 
     Screen screen;
 
-    Model headphone = Model("assets/models/headphone/headphone.gltf");
+    // Model headphone = Model("assets/models/headphone/headphone.gltf");
 
     Shader enviCubeMapShader = Shader("assets/shaders/cube_map_capture.vert", "assets/shaders/hdri_envi.frag", SHADERFILEINFO::TEXTFILE);
     Shader enviShader = Shader("assets/shaders/sky_box.vert", "assets/shaders/sky_box.frag", SHADERFILEINFO::TEXTFILE);
@@ -92,7 +92,7 @@ class PBRTest : public Scene
     {
         camera.move(Input::axis2D(), deltaTime);
 
-        batchRenderer.batch(headphone);
+        // batchRenderer.batch(headphone);
 
         MaterialManager::update();
     }

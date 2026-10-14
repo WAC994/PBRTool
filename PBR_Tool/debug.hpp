@@ -2,7 +2,13 @@
 #include <iostream>
 #include <glad/gl.h>
 
-inline void __stdcall openGLDebugCallback(GLenum source, GLenum type, GLuint id, GLenum severity, GLsizei length, const GLchar* message, const void* userParam)
+#ifdef __linux__
+    #define STDCL
+#else
+    #define STDCL __stdcall
+#endif
+
+inline void STDCL openGLDebugCallback(GLenum source, GLenum type, GLuint id, GLenum severity, GLsizei length, const GLchar* message, const void* userParam)
 {
     // ignore non-significant error/warning codes
     if (id == 131169 || id == 131185 || id == 131218 || id == 131204)

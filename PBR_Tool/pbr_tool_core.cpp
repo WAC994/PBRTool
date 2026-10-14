@@ -9,7 +9,7 @@
 
 namespace pt
 {
-    App& App::getInstance()
+    App &App::getInstance()
     {
         static App instance;
         return instance;
@@ -18,7 +18,10 @@ namespace pt
     App::App() : m_firstMouse(true)
     {
         readConfig(config);
-
+        
+#ifdef __linux__
+        glfwInitHint(GLFW_PLATFORM, GLFW_PLATFORM_X11);
+#endif
         glfwInit();
         glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 4);
         glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 6);
@@ -50,12 +53,12 @@ namespace pt
             }
         }
 
-        config.GPURenderer = reinterpret_cast<const char*>(glGetString(GL_RENDERER));
+        config.GPURenderer = reinterpret_cast<const char *>(glGetString(GL_RENDERER));
 
         eventCallbacks();
     }
 
-    void App::runEvent(Event& event)
+    void App::runEvent(Event &event)
     {
         if (m_scene)
             m_scene->onEvent(event);
@@ -63,8 +66,8 @@ namespace pt
 
     void App::eventCallbacks()
     {
-        glfwSetKeyCallback(m_window, [](GLFWwindow* window, int key, int scancode, int action, int mode)
-            {
+        glfwSetKeyCallback(m_window, [](GLFWwindow *window, int key, int scancode, int action, int mode)
+                           {
                 App& thisWindow = *((App*)glfwGetWindowUserPointer(window));
                 KeyEvent event;
                 event.key = key;
@@ -73,20 +76,18 @@ namespace pt
 
                 // Reserved close window event
                 if (key == GLFW_KEY_ESCAPE && action == GLFW_PRESS)
-                    thisWindow.close();
-            });
+                    thisWindow.close(); });
 
-        glfwSetMouseButtonCallback(m_window, [](GLFWwindow* window, int button, int action, int mods)
-            {
+        glfwSetMouseButtonCallback(m_window, [](GLFWwindow *window, int button, int action, int mods)
+                                   {
                 App& thisWindow = *((App*)glfwGetWindowUserPointer(window));
                 MouseButtonEvent event;
                 event.button = button;
                 event.action = action;
-                thisWindow.runEvent(event);
-            });
+                thisWindow.runEvent(event); });
 
-        glfwSetCursorPosCallback(m_window, [](GLFWwindow* window, double xpos, double ypos)
-            {
+        glfwSetCursorPosCallback(m_window, [](GLFWwindow *window, double xpos, double ypos)
+                                 {
                 App& thisWindow = *((App*)glfwGetWindowUserPointer(window));
                 MousePositionEvent event;
                 event.x = xpos;
@@ -104,26 +105,23 @@ namespace pt
 
                 thisWindow.m_mousePosX = xpos;
                 thisWindow.m_mousePosY = ypos;
-                thisWindow.runEvent(event);
-            });
+                thisWindow.runEvent(event); });
 
-        glfwSetScrollCallback(m_window, [](GLFWwindow* window, double xoffset, double yoffset)
-            {
+        glfwSetScrollCallback(m_window, [](GLFWwindow *window, double xoffset, double yoffset)
+                              {
                 App& thisWindow = *((App*)glfwGetWindowUserPointer(window));
                 MouseScrollEvent event;
                 event.x = xoffset;
                 event.y = yoffset;
-                thisWindow.runEvent(event);
-            });
+                thisWindow.runEvent(event); });
 
-        glfwSetFramebufferSizeCallback(m_window, [](GLFWwindow* window, int width, int height)
-            {
+        glfwSetFramebufferSizeCallback(m_window, [](GLFWwindow *window, int width, int height)
+                                       {
                 App& thisWindow = *((App*)glfwGetWindowUserPointer(window));
                 FramebufferResizeEvent event;
                 event.width = width;
                 event.height = height;
-                thisWindow.runEvent(event);
-            });
+                thisWindow.runEvent(event); });
     }
 
     void App::run()

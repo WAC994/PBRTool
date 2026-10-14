@@ -1,7 +1,7 @@
 #include "camera.hpp"
 #include <glad/gl.h>
 #include <glm/gtc/matrix_transform.hpp>
-#include "PBR_Tool_Core.hpp"
+#include "pbr_tool_core.hpp"
 
 constexpr float CAMERA_YAW = -90.0f;
 constexpr float CAMERA_PITCH = 0.0f;

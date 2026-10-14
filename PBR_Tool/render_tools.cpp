@@ -2,7 +2,7 @@
 #include <glm/glm.hpp>
 #include <glm/gtc/matrix_transform.hpp>
 #include <iostream>
-#include "PBR_Tool_Core.hpp"
+#include "pbr_tool_core.hpp"
 #include "framebuffer.hpp"
 
 namespace pt
